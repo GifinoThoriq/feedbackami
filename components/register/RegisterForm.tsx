@@ -80,10 +80,9 @@ export default function RegisterForm() {
             Email Confirmation
           </DialogTitle>
           <DialogDescription className="text-sm">
-            We have send email to{" "}
-            <span className="text-black">aselole{email}</span> to confirm the
-            validity of our email address. After receiving the email follow the
-            link provided to complete your registration
+            We have send email to <span className="text-black">{email}</span> to
+            confirm the validity of our email address. After receiving the email
+            follow the link provided to complete your registration
           </DialogDescription>
         </DialogContent>
       </Dialog>
