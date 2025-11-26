@@ -1,8 +1,17 @@
 "use client";
 
+import { useProfileStore } from "@/lib/stores/useProfileStore";
 import { Menu, Bell } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect } from "react";
+import { Spinner } from "../ui/spinner";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuLabel,
+  DropdownMenuTrigger,
+} from "../ui/dropdown-menu";
 
 interface IProps {
   children: React.ReactNode;
@@ -25,6 +34,25 @@ export default function HeaderNav({ children }: IProps) {
   ];
 
   const pathname = usePathname();
+
+  const profile = useProfileStore((state) => state.profile);
+  const loading = useProfileStore((state) => state.loading);
+  const fetchProfile = useProfileStore((state) => state.fetchProfile);
+  const error = useProfileStore((state) => state.error);
+
+  useEffect(() => {
+    if (!profile && !loading) {
+      fetchProfile();
+    }
+  }, [fetchProfile, loading, profile]);
+
+  if (loading || !profile) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background text-muted-foreground">
+        {error ? <p>{error}</p> : <Spinner />}
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -58,9 +86,21 @@ export default function HeaderNav({ children }: IProps) {
                 <Bell className="h-4 w-4" />
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
               </button>
-              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-sidebar-primary-foreground">
-                FA
-              </div>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <div
+                    className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r ${profile.profile_color} text-sm font-semibold text-sidebar-primary-foreground`}
+                  >
+                    {profile.first_name?.[0]}
+                    {profile.last_name?.[0]}
+                  </div>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent className="w-40" align="start">
+                  <DropdownMenuLabel>
+                    <Link href={"/dashboard/settings"}>Settings</Link>
+                  </DropdownMenuLabel>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </div>
         </header>

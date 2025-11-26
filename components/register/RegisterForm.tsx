@@ -42,7 +42,10 @@ export default function RegisterForm() {
     if (!res.ok) {
       setFormError(res.error);
       setErrorModal(true);
-    } else setSuccess("Check your email for the verification link.");
+    } else {
+      setSuccess("Check your email for the verification link.");
+      setIsConfModal(true);
+    }
   };
 
   const pwd = watch("password") || "";

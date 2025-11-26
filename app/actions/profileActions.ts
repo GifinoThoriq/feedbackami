@@ -8,6 +8,7 @@ export type ProfileInput = {
   firstName: string;
   lastName: string;
   dateOfBirth: string | Date;
+  profile_color: string;
 };
 
 type ActionResult = { ok: true } | { ok: false; error: string };
@@ -34,6 +35,7 @@ export async function saveOnboardingProfileAction(
       first_name: parsed.data.firstName,
       last_name: parsed.data.lastName,
       date_of_birth: parsed.data.dateOfBirth,
+      profile_color: parsed.data.profile_color,
     })
     .eq("id", user.id);
 
@@ -44,11 +46,9 @@ export async function saveOnboardingProfileAction(
 export async function getProfile() {
   const supabase = createClient(cookies());
 
-  const {
-    data: { user },
-    error: userError,
-  } = await supabase.auth.getUser();
-  if (userError || !user) return null;
+  const { data: auth } = await supabase.auth.getUser();
+  const user = auth.user;
+  if (!user) return { ok: false, error: "Not authenticated" };
 
   const { data, error } = await supabase
     .from("profiles")
