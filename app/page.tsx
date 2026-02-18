@@ -1,42 +1,30 @@
 "use server";
 
-import Link from "next/link";
 import { getProfile } from "./actions/profileActions";
-import { logoutAction } from "./actions/logoutActions";
+import Navbar from "@/components/landing/Navbar";
+import HeroSection from "@/components/landing/HeroSection";
+import FeaturesSection from "@/components/landing/FeaturesSection";
+import HowItWorksSection from "@/components/landing/HowItWorksSection";
+import TestimonialsSection from "@/components/landing/TestimonialsSection";
+import PricingSection from "@/components/landing/PricingSection";
+import CTASection from "@/components/landing/CTASection";
+import Footer from "@/components/landing/Footer";
 
 export default async function Home() {
   const profile = await getProfile();
 
   return (
-    <>
-      {/* HEADER */}
-      <div>
-        <nav className="p-12 flex justify-between items-center">
-          <div>
-            <span>FIDBEKAMI</span>
-          </div>
-          <div>
-            {profile ? (
-              <>
-                <span>Hello! {profile.first_name}</span>
-                <form action={logoutAction}>
-                  <button type="submit">Logout</button>
-                </form>
-              </>
-            ) : (
-              <>
-                {" "}
-                <Link href={"/auth/register"}>
-                  <span className="mr-6">Sign Up</span>
-                </Link>
-                <Link href={"/auth/login"}>
-                  <span>Log in</span>
-                </Link>
-              </>
-            )}
-          </div>
-        </nav>
-      </div>
-    </>
+    <div className="min-h-screen">
+      <Navbar userFirstName={profile?.first_name ?? null} />
+      <main>
+        <HeroSection />
+        <FeaturesSection />
+        <HowItWorksSection />
+        <TestimonialsSection />
+        <PricingSection />
+        <CTASection />
+      </main>
+      <Footer />
+    </div>
   );
 }
