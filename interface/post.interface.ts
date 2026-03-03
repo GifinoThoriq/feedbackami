@@ -7,4 +7,9 @@ export interface IPost {
   user_id: string;
   created_at: string | Date;
   updated_at: string | Date;
+  profiles: {
+    first_name: string;
+    last_name: string;
+    profile_color: string;
+  }
 }

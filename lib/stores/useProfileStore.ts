@@ -6,10 +6,10 @@ import type { ProfileInput } from "@/lib/validation/profile";
 
 export type ProfileRecord = {
   id: string;
-  first_name: string | null;
-  last_name: string | null;
-  profile_color: string | null;
-  date_of_birth: string | null;
+  first_name: string;
+  last_name: string;
+  profile_color: string;
+  date_of_birth: string;
   [key: string]: unknown;
 };
 

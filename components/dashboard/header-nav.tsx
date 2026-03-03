@@ -12,6 +12,7 @@ import {
   DropdownMenuLabel,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
+import AvatarColor from "../ui/avatar-color";
 
 interface IProps {
   children: React.ReactNode;
@@ -88,12 +89,11 @@ export default function HeaderNav({ children }: IProps) {
               </button>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <div
-                    className={`flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-r ${profile.profile_color} text-sm font-semibold text-sidebar-primary-foreground`}
-                  >
-                    {profile.first_name?.[0]}
-                    {profile.last_name?.[0]}
-                  </div>
+                  <AvatarColor
+                    profile_color={profile.profile_color}
+                    first_name={profile.first_name?.[0]}
+                    last_name={profile.last_name?.[0]}
+                  />
                 </DropdownMenuTrigger>
                 <DropdownMenuContent className="w-40" align="start">
                   <DropdownMenuLabel>

@@ -9,11 +9,16 @@ import { PlusIcon } from "lucide-react";
 import Link from "next/link";
 import FeedbackSection from "./components/FeedbackSection";
 import { getMyPosts } from "@/app/actions/postActions";
+import { createClient } from "@/lib/supabase/server";
+import { cookies } from "next/headers";
 
 export default async function Feedback() {
+  const supabase = createClient(cookies());
+
   const boards = await getBoards();
   const status = await getStatus();
   const feedback = await getMyPosts();
+  const { data: auth } = await supabase.auth.getUser();
 
   return (
     <>
@@ -69,7 +74,11 @@ export default async function Feedback() {
           </nav>
         </aside>
         <div className="col-span-10 grid grid-cols-10">
-          <FeedbackSection feedback={feedback} boards={boards} />
+          <FeedbackSection
+            feedback={feedback}
+            boards={boards}
+            author={auth.user}
+          />
         </div>
       </div>
     </>

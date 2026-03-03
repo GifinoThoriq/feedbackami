@@ -47,13 +47,13 @@ export function PostForm({ open, onOpenChange, boards }: IProps) {
   });
 
   const onSubmit = async (values: CreatePostInput) => {
-    console.log("masuk");
     const res = await savePost(values);
 
     if (!res.ok) {
       console.log(res.error);
       return;
     } else {
+      onOpenChange(false)
       router.push("/dashboard/feedback");
     }
   };

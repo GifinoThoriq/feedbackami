@@ -47,7 +47,14 @@ export async function getMyPosts(): Promise<IPost[]> {
 
   const { data, error } = await supabase
     .from("posts")
-    .select("*")
+    .select(`
+      *,
+      profiles (
+        first_name,
+        last_name,
+        profile_color
+      )
+    `)
     .eq("user_id", user.id);
 
   if (error) throw error;

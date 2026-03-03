@@ -49,9 +49,9 @@ export async function getBoards(): Promise<IBoard[]> {
   if (userError || !user) return [];
 
   const { data, error } = await supabase
-    .from("board")
-    .select("*")
-    .eq("user_id", user.id);
+  .from("board")
+  .select("*")
+  .eq("user_id", user.id);
 
   if (error) throw error;
   return data;

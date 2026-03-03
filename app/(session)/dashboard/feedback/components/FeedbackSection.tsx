@@ -21,10 +21,13 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
+import FeedbackCard from "@/components/dashboard/feedback/FeedbackCard";
+import { User } from "@supabase/supabase-js";
 
 interface IProps {
   feedback: IPost[];
   boards: IBoard[];
+  author: User | null;
 }
 
 const toDate = (value: string | Date) => {
@@ -67,7 +70,7 @@ const formatRelativeTime = (value: string | Date) => {
   return `${years}y ago`;
 };
 
-export default function FeedbackSection({ feedback, boards }: IProps) {
+export default function FeedbackSection({ feedback, boards, author }: IProps) {
   const [isOpenModalPost, setIsOpenModalPost] = useState(false);
   const [listFilter, setListFilter] = useState<"default" | "trending">(
     "default"
@@ -242,76 +245,10 @@ export default function FeedbackSection({ feedback, boards }: IProps) {
           <main className="col-span-7 flex flex-col bg-muted/10">
             <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
               {selectedPost ? (
-                <div>
-                  <section className="rounded-md bg-card mb-6 border">
-                    <div className="border-b p-4 flex gap-4 items-center">
-                      <div className="flex flex-col items-center">
-                        <ArrowBigUpDash className="text-primary" />
-                        <span className="text-sm font-bold">1</span>
-                      </div>
-                      <h5 className="font-medium text-lg">
-                        {selectedPost.title}
-                      </h5>
-                    </div>
-
-                    <div>
-                      <h3 className="text-sm font-semibold text-foreground">
-                        Details
-                      </h3>
-                      <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
-                        {selectedPost.details ??
-                          "This post does not have additional details yet. Add a description so everyone has context."}
-                      </p>
-                    </div>
-
-                    <div className="rounded-2xl border bg-muted/20 p-5">
-                      <h4 className="text-sm font-semibold">Leave a comment</h4>
-                      <Textarea
-                        placeholder="Share feedback with your team..."
-                        className="mt-3"
-                        rows={3}
-                      />
-                      <div className="mt-3 flex justify-end">
-                        <Button size="sm">Send</Button>
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="space-y-4">
-                    <div className="rounded-2xl border bg-card p-5 shadow-sm">
-                      <h3 className="text-sm font-semibold">Tags</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        Organize posts by theme or squads.
-                      </p>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-4 w-full"
-                      >
-                        <Tag className="size-4" />
-                        Add tag
-                      </Button>
-                    </div>
-
-                    <div className="rounded-2xl border bg-card p-5 shadow-sm">
-                      <h3 className="text-sm font-semibold">Voters</h3>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        People who supported this idea.
-                      </p>
-                      <div className="mt-4 flex items-center gap-3 rounded-xl border bg-muted/20 px-3 py-2">
-                        <div className="flex size-10 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-                          <UserRound className="size-5" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-medium">You</p>
-                          <p className="text-xs text-muted-foreground">
-                            Creator
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  </section>
-                </div>
+                <FeedbackCard
+                  selectedPost={selectedPost}
+                  authorId={author?.id}
+                />
               ) : (
                 <div className="flex h-full items-center justify-center rounded-2xl border bg-card text-sm text-muted-foreground">
                   Adjust your filters to see a post.
