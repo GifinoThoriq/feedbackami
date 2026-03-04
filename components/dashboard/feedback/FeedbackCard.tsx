@@ -1,5 +1,12 @@
 import AvatarColor from "@/components/ui/avatar-color";
 import { Button } from "@/components/ui/button";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { IPost } from "@/interface/post.interface";
 import { ArrowBigUpDash, Tag, UserRound } from "lucide-react";
@@ -69,20 +76,47 @@ export default function FeedbackCard({ selectedPost, authorId }: IProps) {
         </div>
       </section>
 
-      <section className="space-y-4">
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-semibold">Tags</h3>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Organize posts by theme or squads.
-          </p>
-          <Button variant="outline" size="sm" className="mt-4 w-full">
-            <Tag className="size-4" />
-            Add tag
-          </Button>
-        </div>
+      <section className="flex flex-row gap-4">
+        <div className="rounded-md border bg-card p-5 w-100">
+          <h3 className="text-sm font-semibold">Details</h3>
+          <ul className="mt-2 space-y-4">
+            <li className="flex flex-row justify-between items-center">
+              <p className="mt-1 text-sm text-muted-foreground">Public Link</p>
 
-        <div className="rounded-2xl border bg-card p-5 shadow-sm">
-          <h3 className="text-sm font-semibold">Voters</h3>
+              <Select>
+                <SelectTrigger className="border p-2 border-gray-300 rounded">
+                  <SelectValue placeholder="Board" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"test"}>test</SelectItem>
+                </SelectContent>
+              </Select>
+            </li>
+            <li className="flex flex-row justify-between items-center">
+              <p className="mt-1 text-sm text-muted-foreground">Board</p>
+              <Select>
+                <SelectTrigger className="border p-2 border-gray-300 rounded">
+                  <SelectValue placeholder="Board" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"test"}>test</SelectItem>
+                </SelectContent>
+              </Select>
+            </li>
+            <li className="flex flex-row justify-between items-center">
+              <p className="mt-1 text-sm text-muted-foreground">Status</p>
+              <Select>
+                <SelectTrigger className="border p-2 border-gray-300 rounded">
+                  <SelectValue placeholder="Board" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={"test"}>test</SelectItem>
+                </SelectContent>
+              </Select>
+            </li>
+          </ul>
+
+          <h3 className="text-sm font-semibold mt-8">Voters</h3>
           <p className="mt-1 text-xs text-muted-foreground">
             People who supported this idea.
           </p>
@@ -95,6 +129,14 @@ export default function FeedbackCard({ selectedPost, authorId }: IProps) {
               <p className="text-xs text-muted-foreground">Creator</p>
             </div>
           </div>
+        </div>
+
+        <div className="rounded-md border bg-card p-5 w-100 h-auto">
+          <h3 className="text-sm font-semibold">Tags</h3>
+          <Button variant="outline" size="sm" className="mt-4 w-full">
+            <Tag className="size-4" />
+            Add tag
+          </Button>
         </div>
       </section>
     </div>
