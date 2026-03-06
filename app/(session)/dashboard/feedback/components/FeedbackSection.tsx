@@ -2,31 +2,32 @@
 
 import { PostForm } from "@/components/dashboard/feedback/PostForm";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 import { IBoard } from "@/interface/board.interface";
 import { IPost } from "@/interface/post.interface";
+import { IStatus } from "@/interface/status.interface";
+import { IComment } from "@/interface/comment.interface";
+import { IVote } from "@/interface/vote.interface";
+import { ITag } from "@/interface/tag.interface";
+import { getCommentsByPost } from "@/app/actions/commentActions";
+import { getVotesByPost } from "@/app/actions/voteActions";
+import { getTags } from "@/app/actions/tagActions";
+import { getMyPosts } from "@/app/actions/postActions";
 import {
-  ArrowBigUp,
-  ArrowBigUpDash,
-  ArrowUpIcon,
-  Link2,
   MessageSquare,
   PencilIcon,
   PlusIcon,
   Search,
-  Tag,
   TrendingUp,
-  UserRound,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import FeedbackCard from "@/components/dashboard/feedback/FeedbackCard";
 import { User } from "@supabase/supabase-js";
 
 interface IProps {
   feedback: IPost[];
   boards: IBoard[];
+  statuses: IStatus[];
   author: User | null;
 }
 
@@ -70,15 +71,18 @@ const formatRelativeTime = (value: string | Date) => {
   return `${years}y ago`;
 };
 
-export default function FeedbackSection({ feedback, boards, author }: IProps) {
+export default function FeedbackSection({ feedback: initialFeedback, boards, statuses, author }: IProps) {
   const [isOpenModalPost, setIsOpenModalPost] = useState(false);
-  const [listFilter, setListFilter] = useState<"default" | "trending">(
-    "default"
-  );
+  const [listFilter, setListFilter] = useState<"default" | "trending">("default");
   const [searchValue, setSearchValue] = useState("");
+  const [feedback, setFeedback] = useState<IPost[]>(initialFeedback);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(
-    feedback[0]?.id ?? null
+    initialFeedback[0]?.id ?? null
   );
+
+  const [comments, setComments] = useState<IComment[]>([]);
+  const [votes, setVotes] = useState<IVote[]>([]);
+  const [allTags, setAllTags] = useState<ITag[]>([]);
 
   const boardLookup = useMemo(
     () =>
@@ -133,13 +137,38 @@ export default function FeedbackSection({ feedback, boards, author }: IProps) {
   const selectedPost =
     filteredPosts.find((post) => post.id === selectedPostId) ?? null;
 
-  const selectedBoardName = selectedPost
-    ? boardLookup[selectedPost.board_id]?.name ?? "Unassigned board"
-    : "Select a post";
-
   const publicLink = selectedPost
-    ? `https://feedbackami.app/p/${selectedPost.id}`
+    ? `${typeof window !== "undefined" ? window.location.origin : "https://feedbackami.app"}/p/${selectedPost.id}`
     : "";
+
+  // Load comments + votes + tags when selected post changes
+  useEffect(() => {
+    if (!selectedPostId) return;
+    getCommentsByPost(selectedPostId).then(setComments);
+    getVotesByPost(selectedPostId).then(setVotes);
+    getTags().then(setAllTags);
+  }, [selectedPostId]);
+
+  const refreshPostList = useCallback(async () => {
+    const fresh = await getMyPosts();
+    setFeedback(fresh);
+  }, []);
+
+  const handleVoteToggle = useCallback(async (postId: string) => {
+    const updated = await getVotesByPost(postId);
+    setVotes(updated);
+  }, []);
+
+  const handleCommentAdded = useCallback(async (postId: string) => {
+    const updated = await getCommentsByPost(postId);
+    setComments(updated);
+  }, []);
+
+  const handleTagsChanged = useCallback(async (postId: string) => {
+    await refreshPostList();
+    const tags = await getTags();
+    setAllTags(tags);
+  }, [refreshPostList]);
 
   return (
     <>
@@ -248,6 +277,15 @@ export default function FeedbackSection({ feedback, boards, author }: IProps) {
                 <FeedbackCard
                   selectedPost={selectedPost}
                   authorId={author?.id}
+                  publicLink={publicLink}
+                  comments={comments}
+                  votes={votes}
+                  statuses={statuses}
+                  boards={boards}
+                  allTags={allTags}
+                  onVoteToggle={handleVoteToggle}
+                  onCommentAdded={handleCommentAdded}
+                  onTagsChanged={handleTagsChanged}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center rounded-2xl border bg-card text-sm text-muted-foreground">
@@ -259,7 +297,6 @@ export default function FeedbackSection({ feedback, boards, author }: IProps) {
         </>
       ) : (
         <>
-          {" "}
           <main className="col-span-10">
             <div className="flex items-center justify-center flex-col min-h-full">
               <h6 className="text-sm font-bold">Nice View!</h6>

@@ -53,10 +53,52 @@ export async function getMyPosts(): Promise<IPost[]> {
         first_name,
         last_name,
         profile_color
+      ),
+      post_tags (
+        tags (
+          id,
+          name,
+          color,
+          user_id
+        )
       )
     `)
     .eq("user_id", user.id);
 
   if (error) throw error;
-  return data;
+
+  return data.map((post: any) => ({
+    ...post,
+    tags: (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
+  }));
+}
+
+export async function updatePostStatus(
+  postId: string,
+  statusId: string
+): Promise<ActionResult> {
+  const supabase = createClient(cookies());
+
+  const { error } = await supabase
+    .from("posts")
+    .update({ status_id: statusId })
+    .eq("id", postId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
+export async function updatePostBoard(
+  postId: string,
+  boardId: string
+): Promise<ActionResult> {
+  const supabase = createClient(cookies());
+
+  const { error } = await supabase
+    .from("posts")
+    .update({ board_id: boardId })
+    .eq("id", postId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
 }

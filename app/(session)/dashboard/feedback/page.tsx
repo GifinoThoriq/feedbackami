@@ -77,6 +77,7 @@ export default async function Feedback() {
           <FeedbackSection
             feedback={feedback}
             boards={boards}
+            statuses={status}
             author={auth.user}
           />
         </div>

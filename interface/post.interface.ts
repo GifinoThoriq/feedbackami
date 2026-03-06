@@ -1,3 +1,5 @@
+import { ITag } from "./tag.interface";
+
 export interface IPost {
   id: string;
   board_id: string;
@@ -11,5 +13,6 @@ export interface IPost {
     first_name: string;
     last_name: string;
     profile_color: string;
-  }
+  };
+  tags?: ITag[];
 }
