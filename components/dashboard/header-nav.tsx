@@ -21,17 +21,21 @@ interface IProps {
 export default function HeaderNav({ children }: IProps) {
   const headerNav = [
     {
+      label: "Dashboard",
+      href: "/dashboard",
+    },
+    {
       label: "Feedback",
       href: "/dashboard/feedback",
     },
-    {
-      label: "Roadmap",
-      href: "/dashboard/roadmap",
-    },
-    {
-      label: "Users",
-      href: "dashboard/users",
-    },
+    // {
+    //   label: "Roadmap",
+    //   href: "/dashboard/roadmap",
+    // },
+    // {
+    //   label: "Users",
+    //   href: "dashboard/users",
+    // },
   ];
 
   const pathname = usePathname();
@@ -68,7 +72,7 @@ export default function HeaderNav({ children }: IProps) {
             <Menu className="h-4 w-4" />
           </button>
           <div className="flex flex-1 items-center justify-between gap-4">
-            <div className="flex flex-1 gap-4">
+            <div className="flex flex-1 gap-4 justify-center">
               {headerNav.map((nav) => (
                 <Link key={nav.label} href={nav.href}>
                   <div
@@ -88,7 +92,7 @@ export default function HeaderNav({ children }: IProps) {
                 <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
               </button>
               <DropdownMenu>
-                <DropdownMenuTrigger asChild>
+                <DropdownMenuTrigger>
                   <AvatarColor
                     profile_color={profile.profile_color}
                     first_name={profile.first_name?.[0]}
