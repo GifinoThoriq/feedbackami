@@ -36,6 +36,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef, useState, useTransition } from "react";
 import { cn } from "@/lib/utils";
+import { statusColorMap } from "@/lib/color";
 
 interface IProps {
   selectedPost: IPost;
@@ -397,6 +398,7 @@ export default function FeedbackCard({
             <li className="flex flex-row justify-between items-center">
               <p className="mt-1 text-sm text-muted-foreground">Board</p>
               <Select
+                key={selectedPost.id}
                 defaultValue={selectedPost.board_id}
                 onValueChange={handleBoardChange}
                 disabled={!isOwner}
@@ -416,6 +418,7 @@ export default function FeedbackCard({
             <li className="flex flex-row justify-between items-center">
               <p className="mt-1 text-sm text-muted-foreground">Status</p>
               <Select
+                key={selectedPost.id}
                 defaultValue={selectedPost.status_id ?? undefined}
                 onValueChange={handleStatusChange}
                 disabled={!isOwner}
@@ -424,11 +427,26 @@ export default function FeedbackCard({
                   <SelectValue placeholder="Status" />
                 </SelectTrigger>
                 <SelectContent>
-                  {statuses.map((s) => (
-                    <SelectItem key={s.id} value={s.id}>
-                      {s.name}
-                    </SelectItem>
-                  ))}
+                  {statuses.map((s) => {
+                    const color = statusColorMap[s.name];
+                    return (
+                      <SelectItem key={s.id} value={s.id}>
+                        <span className="flex items-center gap-2">
+                          {color && (
+                            <span
+                              className={cn(
+                                "size-2 rounded-full",
+                                color.bg,
+                                color.border,
+                                "border"
+                              )}
+                            />
+                          )}
+                          {s.name}
+                        </span>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </li>

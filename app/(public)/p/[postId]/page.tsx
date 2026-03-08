@@ -3,6 +3,8 @@ import { cookies } from "next/headers";
 import { notFound } from "next/navigation";
 import AvatarColor from "@/components/ui/avatar-color";
 import { ArrowBigUpDash } from "lucide-react";
+import { statusColorMap } from "@/lib/color";
+import { cn } from "@/lib/utils";
 import PublicCommentForm from "./PublicCommentForm";
 
 interface IProps {
@@ -20,7 +22,8 @@ export default async function PublicPostPage({ params }: IProps) {
       profiles (first_name, last_name, profile_color),
       post_tags (
         tags (id, name, color)
-      )
+      ),
+      status (id, name)
     `)
     .eq("id", postId)
     .single();
@@ -55,7 +58,22 @@ export default async function PublicPostPage({ params }: IProps) {
               <ArrowBigUpDash className="text-primary" />
               <span className="text-sm font-bold">{voteCount}</span>
             </div>
-            <h1 className="font-semibold text-xl">{post.title}</h1>
+            <h1 className="font-semibold text-xl flex-1">{post.title}</h1>
+            {post.status && (() => {
+              const color = statusColorMap[post.status.name];
+              return (
+                <span
+                  className={cn(
+                    "rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
+                    color
+                      ? `${color.bg} ${color.text} ${color.border}`
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {post.status.name}
+                </span>
+              );
+            })()}
           </div>
 
           {/* Body */}
