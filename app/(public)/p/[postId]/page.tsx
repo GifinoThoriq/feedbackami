@@ -17,14 +17,16 @@ export default async function PublicPostPage({ params }: IProps) {
 
   const { data: post } = await supabase
     .from("posts")
-    .select(`
+    .select(
+      `
       *,
       profiles (first_name, last_name, profile_color),
       post_tags (
         tags (id, name, color)
       ),
       status (id, name)
-    `)
+    `
+    )
     .eq("id", postId)
     .single();
 
@@ -32,10 +34,12 @@ export default async function PublicPostPage({ params }: IProps) {
 
   const { data: comments } = await supabase
     .from("comments")
-    .select(`
+    .select(
+      `
       *,
       profiles (first_name, last_name, profile_color)
-    `)
+    `
+    )
     .eq("post_id", postId)
     .order("created_at", { ascending: true });
 
@@ -58,22 +62,41 @@ export default async function PublicPostPage({ params }: IProps) {
               <ArrowBigUpDash className="text-primary" />
               <span className="text-sm font-bold">{voteCount}</span>
             </div>
-            <h1 className="font-semibold text-xl flex-1">{post.title}</h1>
-            {post.status && (() => {
-              const color = statusColorMap[post.status.name];
-              return (
-                <span
-                  className={cn(
-                    "rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
-                    color
-                      ? `${color.bg} ${color.text} ${color.border}`
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {post.status.name}
-                </span>
-              );
-            })()}
+            <div className="flex grow items-start justify-between">
+              <div className="flex flex-col gap-2">
+                <h1 className="font-semibold text-xl flex-1">{post.title}</h1>
+                {tags.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {tags.map((tag: any) => (
+                      <span
+                        key={tag.id}
+                        className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
+                        style={{ backgroundColor: tag.color }}
+                      >
+                        {tag.name}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {post.status &&
+                (() => {
+                  const color = statusColorMap[post.status.name];
+                  return (
+                    <span
+                      className={cn(
+                        "rounded-full border px-2.5 py-0.5 text-xs font-medium shrink-0",
+                        color
+                          ? `${color.bg} ${color.text} ${color.border}`
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {post.status.name}
+                    </span>
+                  );
+                })()}
+            </div>
           </div>
 
           {/* Body */}
@@ -94,20 +117,6 @@ export default async function PublicPostPage({ params }: IProps) {
                 </p>
               </div>
             </div>
-
-            {tags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-4">
-                {tags.map((tag: any) => (
-                  <span
-                    key={tag.id}
-                    className="rounded-full px-2 py-0.5 text-xs font-medium text-white"
-                    style={{ backgroundColor: tag.color }}
-                  >
-                    {tag.name}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
 
           {/* Comments */}
@@ -134,7 +143,9 @@ export default async function PublicPostPage({ params }: IProps) {
                     )}
                     <div>
                       <p className="text-sm font-semibold">{displayName}</p>
-                      <p className="text-sm text-muted-foreground">{c.content}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {c.content}
+                      </p>
                     </div>
                   </div>
                 );
