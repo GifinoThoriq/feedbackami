@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
 import AvatarColor from "../ui/avatar-color";
+import { logoutAction } from "@/app/actions/logoutActions";
 
 interface IProps {
   children: React.ReactNode;
@@ -59,6 +60,10 @@ export default function HeaderNav({ children }: IProps) {
     );
   }
 
+  const logoutHandler = async () => {
+    await logoutAction();
+  };
+
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex flex-1 flex-col">
@@ -102,6 +107,12 @@ export default function HeaderNav({ children }: IProps) {
                 <DropdownMenuContent className="w-40" align="start">
                   <DropdownMenuLabel>
                     <Link href={"/dashboard/settings"}>Settings</Link>
+                    <div
+                      onClick={logoutHandler}
+                      className="cursor-pointer text-destructive mt-2"
+                    >
+                      Logout
+                    </div>
                   </DropdownMenuLabel>
                 </DropdownMenuContent>
               </DropdownMenu>
