@@ -2,24 +2,24 @@
 
 import * as React from "react";
 import { ChevronDownIcon } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { type DateRange as TDateRange } from "react-day-picker";
 
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { type DateRange } from "react-day-picker";
+interface IProps {
+  value: TDateRange | undefined;
+  onChange: (range: TDateRange | undefined) => void;
+}
 
-export function DateRange() {
+export function DateRange({ value, onChange }: IProps) {
   const [open, setOpen] = React.useState(false);
 
-  const [dateRange, setDateRange] = React.useState<DateRange | undefined>({
-    from: new Date(),
-    to: new Date(),
-  });
+  const label = value?.from
+    ? value.to
+      ? `${value.from.toLocaleDateString()} - ${value.to.toLocaleDateString()}`
+      : value.from.toLocaleDateString()
+    : "Select date";
 
   return (
     <div className="flex flex-col gap-3">
@@ -30,23 +30,29 @@ export function DateRange() {
             id="date"
             className="w-48 justify-between font-normal"
           >
-            {dateRange
-              ? `${dateRange?.from?.toLocaleDateString()} - ${dateRange?.to?.toLocaleDateString()}`
-              : "Select date"}
-            <ChevronDownIcon />
+            <span className="truncate text-xs">{label}</span>
+            <ChevronDownIcon className="shrink-0" />
           </Button>
         </PopoverTrigger>
         <PopoverContent className="w-auto overflow-hidden p-0" align="start">
           <Calendar
             mode="range"
-            defaultMonth={dateRange?.from}
-            selected={dateRange}
-            onSelect={setDateRange}
+            defaultMonth={value?.from}
+            selected={value}
+            onSelect={onChange}
             numberOfMonths={2}
             className="rounded-lg border shadow-sm"
           />
         </PopoverContent>
       </Popover>
+      {value?.from && (
+        <button
+          onClick={() => onChange(undefined)}
+          className="text-xs text-muted-foreground underline text-left"
+        >
+          Clear
+        </button>
+      )}
     </div>
   );
 }

@@ -23,12 +23,16 @@ import {
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FeedbackCard from "@/components/dashboard/feedback/FeedbackCard";
 import { User } from "@supabase/supabase-js";
+import { type DateRange } from "react-day-picker";
 
 interface IProps {
   feedback: IPost[];
   boards: IBoard[];
   statuses: IStatus[];
   author: User | null;
+  selectedBoardIds: string[];
+  selectedStatusIds: string[];
+  dateRange: DateRange | undefined;
 }
 
 const toDate = (value: string | Date) => {
@@ -71,7 +75,15 @@ const formatRelativeTime = (value: string | Date) => {
   return `${years}y ago`;
 };
 
-export default function FeedbackSection({ feedback: initialFeedback, boards, statuses, author }: IProps) {
+export default function FeedbackSection({
+  feedback: initialFeedback,
+  boards,
+  statuses,
+  author,
+  selectedBoardIds,
+  selectedStatusIds,
+  dateRange,
+}: IProps) {
   const [isOpenModalPost, setIsOpenModalPost] = useState(false);
   const [listFilter, setListFilter] = useState<"default" | "trending">("default");
   const [searchValue, setSearchValue] = useState("");
@@ -95,6 +107,7 @@ export default function FeedbackSection({ feedback: initialFeedback, boards, sta
 
   const filteredPosts = useMemo(() => {
     const normalizedQuery = searchValue.trim().toLowerCase();
+
     const sorted = [...feedback].sort((a, b) => {
       const aDate = new Date(
         listFilter === "trending" ? a.updated_at : a.created_at
@@ -105,20 +118,57 @@ export default function FeedbackSection({ feedback: initialFeedback, boards, sta
       return bDate - aDate;
     });
 
-    if (!normalizedQuery) return sorted;
-
     return sorted.filter((post) => {
-      const boardName =
-        boardLookup[post.board_id]?.name?.toLowerCase() ?? "unknown";
-      const detailMatch =
-        post.details?.toLowerCase().includes(normalizedQuery) ?? false;
-      return (
-        post.title.toLowerCase().includes(normalizedQuery) ||
-        boardName.includes(normalizedQuery) ||
-        detailMatch
-      );
+      // Board filter
+      if (selectedBoardIds.length > 0 && !selectedBoardIds.includes(post.board_id)) {
+        return false;
+      }
+
+      // Status filter
+      if (selectedStatusIds.length > 0) {
+        if (!post.status_id || !selectedStatusIds.includes(post.status_id)) {
+          return false;
+        }
+      }
+
+      // Date range filter — compare by local calendar day to avoid UTC offset issues
+      if (dateRange?.from || dateRange?.to) {
+        const d = new Date(post.created_at);
+        const postDay = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        if (dateRange.from) {
+          const fromDay = new Date(
+            dateRange.from.getFullYear(),
+            dateRange.from.getMonth(),
+            dateRange.from.getDate()
+          );
+          if (postDay < fromDay) return false;
+        }
+        if (dateRange.to) {
+          const toDay = new Date(
+            dateRange.to.getFullYear(),
+            dateRange.to.getMonth(),
+            dateRange.to.getDate()
+          );
+          if (postDay > toDay) return false;
+        }
+      }
+
+      // Search filter
+      if (normalizedQuery) {
+        const boardName = boardLookup[post.board_id]?.name?.toLowerCase() ?? "unknown";
+        const detailMatch = post.details?.toLowerCase().includes(normalizedQuery) ?? false;
+        if (
+          !post.title.toLowerCase().includes(normalizedQuery) &&
+          !boardName.includes(normalizedQuery) &&
+          !detailMatch
+        ) {
+          return false;
+        }
+      }
+
+      return true;
     });
-  }, [boardLookup, feedback, listFilter, searchValue]);
+  }, [boardLookup, feedback, listFilter, searchValue, selectedBoardIds, selectedStatusIds, dateRange]);
 
   useEffect(() => {
     if (!filteredPosts.length) {
