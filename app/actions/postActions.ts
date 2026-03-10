@@ -5,6 +5,67 @@ import { createClient } from "@/lib/supabase/server";
 import { createPostSchema } from "@/lib/validation/post";
 import { cookies } from "next/headers";
 
+async function fireWebhook(
+  boardId: string,
+  post: { id: string; title: string; details: string | null; created_at: string },
+  boardName: string
+) {
+  const supabase = createClient(cookies());
+  const { data: integration } = await supabase
+    .from("board_integrations")
+    .select("*")
+    .eq("board_id", boardId)
+    .maybeSingle();
+
+  if (!integration) return;
+
+  let body: object;
+  if (integration.type === "discord") {
+    body = {
+      username: "Feedbackami",
+      embeds: [
+        {
+          title: `📬 New Feedback — ${boardName}`,
+          description: post.title,
+          color: 0x55adfe,
+          fields: post.details ? [{ name: "Details", value: post.details }] : [],
+          timestamp: post.created_at,
+        },
+      ],
+    };
+  } else if (integration.type === "slack") {
+    body = {
+      text: `New feedback on *${boardName}*`,
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*New Feedback — ${boardName}*\n*${post.title}*${post.details ? `\n${post.details}` : ""}`,
+          },
+        },
+      ],
+    };
+  } else {
+    body = {
+      event: "new_post",
+      board_id: boardId,
+      post: {
+        id: post.id,
+        title: post.title,
+        details: post.details,
+        created_at: post.created_at,
+      },
+    };
+  }
+
+  fetch(integration.webhook_url, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  }).catch(() => {});
+}
+
 type ActionResult = { ok: true } | { ok: false; error: string };
 
 export async function savePost(values: any): Promise<ActionResult> {
@@ -23,16 +84,30 @@ export async function savePost(values: any): Promise<ActionResult> {
   const user = auth.user;
   if (!user) return { ok: false, error: "Not authenticated" };
 
-  const { error } = await supabase.from("posts").insert([
-    {
-      board_id: parsed.data.board_id,
-      title: parsed.data.title,
-      details: parsed.data.title,
-      user_id: user.id,
-    },
-  ]);
+  const { data: inserted, error } = await supabase
+    .from("posts")
+    .insert([
+      {
+        board_id: parsed.data.board_id,
+        title: parsed.data.title,
+        details: parsed.data.title,
+        user_id: user.id,
+      },
+    ])
+    .select("id, title, details, created_at")
+    .single();
 
   if (error) return { ok: false, error: error.message };
+
+  if (inserted) {
+    const { data: board } = await supabase
+      .from("board")
+      .select("name")
+      .eq("id", parsed.data.board_id)
+      .single();
+    fireWebhook(parsed.data.board_id, inserted, board?.name ?? "Board");
+  }
+
   return { ok: true };
 }
 

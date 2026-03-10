@@ -29,6 +29,10 @@ export default function HeaderNav({ children }: IProps) {
       label: "Feedback",
       href: "/dashboard/feedback",
     },
+    {
+      label: "Integrations",
+      href: "/dashboard/integrations",
+    },
     // {
     //   label: "Roadmap",
     //   href: "/dashboard/roadmap",
