@@ -15,4 +15,5 @@ export interface IPost {
     profile_color: string;
   };
   tags?: ITag[];
+  comment_count?: number;
 }

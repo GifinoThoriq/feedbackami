@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import FeedbackCard from "@/components/dashboard/feedback/FeedbackCard";
+import { Spinner } from "@/components/ui/spinner";
 import { User } from "@supabase/supabase-js";
 import { type DateRange } from "react-day-picker";
 
@@ -85,13 +86,16 @@ export default function FeedbackSection({
   dateRange,
 }: IProps) {
   const [isOpenModalPost, setIsOpenModalPost] = useState(false);
-  const [listFilter, setListFilter] = useState<"default" | "trending">("default");
+  const [listFilter, setListFilter] = useState<"default" | "trending">(
+    "default"
+  );
   const [searchValue, setSearchValue] = useState("");
   const [feedback, setFeedback] = useState<IPost[]>(initialFeedback);
   const [selectedPostId, setSelectedPostId] = useState<string | null>(
     initialFeedback[0]?.id ?? null
   );
 
+  const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [comments, setComments] = useState<IComment[]>([]);
   const [votes, setVotes] = useState<IVote[]>([]);
   const [allTags, setAllTags] = useState<ITag[]>([]);
@@ -120,7 +124,10 @@ export default function FeedbackSection({
 
     return sorted.filter((post) => {
       // Board filter
-      if (selectedBoardIds.length > 0 && !selectedBoardIds.includes(post.board_id)) {
+      if (
+        selectedBoardIds.length > 0 &&
+        !selectedBoardIds.includes(post.board_id)
+      ) {
         return false;
       }
 
@@ -155,8 +162,10 @@ export default function FeedbackSection({
 
       // Search filter
       if (normalizedQuery) {
-        const boardName = boardLookup[post.board_id]?.name?.toLowerCase() ?? "unknown";
-        const detailMatch = post.details?.toLowerCase().includes(normalizedQuery) ?? false;
+        const boardName =
+          boardLookup[post.board_id]?.name?.toLowerCase() ?? "unknown";
+        const detailMatch =
+          post.details?.toLowerCase().includes(normalizedQuery) ?? false;
         if (
           !post.title.toLowerCase().includes(normalizedQuery) &&
           !boardName.includes(normalizedQuery) &&
@@ -168,7 +177,15 @@ export default function FeedbackSection({
 
       return true;
     });
-  }, [boardLookup, feedback, listFilter, searchValue, selectedBoardIds, selectedStatusIds, dateRange]);
+  }, [
+    boardLookup,
+    feedback,
+    listFilter,
+    searchValue,
+    selectedBoardIds,
+    selectedStatusIds,
+    dateRange,
+  ]);
 
   useEffect(() => {
     if (!filteredPosts.length) {
@@ -188,15 +205,38 @@ export default function FeedbackSection({
     filteredPosts.find((post) => post.id === selectedPostId) ?? null;
 
   const publicLink = selectedPost
-    ? `${typeof window !== "undefined" ? window.location.origin : "https://feedbackami.app"}/p/${selectedPost.id}`
+    ? `${
+        typeof window !== "undefined"
+          ? window.location.origin
+          : "https://feedbackami.app"
+      }/p/${selectedPost.id}`
     : "";
 
   // Load comments + votes + tags when selected post changes
   useEffect(() => {
-    if (!selectedPostId) return;
-    getCommentsByPost(selectedPostId).then(setComments);
-    getVotesByPost(selectedPostId).then(setVotes);
-    getTags().then(setAllTags);
+    if (!selectedPostId) {
+      setIsLoadingPost(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingPost(true);
+
+    Promise.all([
+      getCommentsByPost(selectedPostId),
+      getVotesByPost(selectedPostId),
+      getTags(),
+    ]).then(([fetchedComments, fetchedVotes, fetchedTags]) => {
+      if (cancelled) return;
+      setComments(fetchedComments);
+      setVotes(fetchedVotes);
+      setAllTags(fetchedTags);
+      setIsLoadingPost(false);
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedPostId]);
 
   const refreshPostList = useCallback(async () => {
@@ -214,11 +254,14 @@ export default function FeedbackSection({
     setComments(updated);
   }, []);
 
-  const handleTagsChanged = useCallback(async (postId: string) => {
-    await refreshPostList();
-    const tags = await getTags();
-    setAllTags(tags);
-  }, [refreshPostList]);
+  const handleTagsChanged = useCallback(
+    async (postId: string) => {
+      await refreshPostList();
+      const tags = await getTags();
+      setAllTags(tags);
+    },
+    [refreshPostList]
+  );
 
   return (
     <>
@@ -280,11 +323,13 @@ export default function FeedbackSection({
                       <li key={post.id}>
                         <button
                           onClick={() => setSelectedPostId(post.id)}
+                          disabled={isLoadingPost}
                           className={cn(
                             "w-full rounded-xl border px-3 py-3 text-left transition hover:border-primary/50 hover:bg-primary/5",
                             selectedPostId === post.id
                               ? "border-primary bg-primary/5 shadow-sm"
-                              : "border-transparent bg-muted/30"
+                              : "border-transparent bg-muted/30",
+                            isLoadingPost && "pointer-events-none opacity-60"
                           )}
                         >
                           <div className="flex items-start justify-between gap-2">
@@ -303,7 +348,8 @@ export default function FeedbackSection({
                           </p>
                           <div className="mt-3 flex items-center gap-4 text-xs text-muted-foreground">
                             <span className="flex items-center gap-1">
-                              <MessageSquare className="size-3.5" />0
+                              <MessageSquare className="size-3.5" />
+                              {post.comment_count ?? 0}
                             </span>
                             <span>
                               Updated {formatAbsoluteDate(post.updated_at)}
@@ -323,7 +369,11 @@ export default function FeedbackSection({
           </aside>
           <main className="col-span-7 flex flex-col bg-muted/10">
             <div className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
-              {selectedPost ? (
+              {isLoadingPost ? (
+                <div className="flex h-full items-center justify-center">
+                  <Spinner className="size-6" />
+                </div>
+              ) : selectedPost ? (
                 <FeedbackCard
                   selectedPost={selectedPost}
                   authorId={author?.id}

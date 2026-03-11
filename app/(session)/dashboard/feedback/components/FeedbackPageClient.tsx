@@ -20,7 +20,12 @@ interface IProps {
   author: User | null;
 }
 
-export default function FeedbackPageClient({ boards, statuses, feedback, author }: IProps) {
+export default function FeedbackPageClient({
+  boards,
+  statuses,
+  feedback,
+  author,
+}: IProps) {
   const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>([]);
   const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
   const [dateRange, setDateRange] = useState<TDateRange | undefined>(undefined);

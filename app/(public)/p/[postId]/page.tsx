@@ -5,7 +5,7 @@ import AvatarColor from "@/components/ui/avatar-color";
 import { ArrowBigUpDash } from "lucide-react";
 import { statusColorMap } from "@/lib/color";
 import { cn } from "@/lib/utils";
-import PublicCommentForm from "./PublicCommentForm";
+import PublicCommentThread from "./PublicCommentThread";
 
 interface IProps {
   params: Promise<{ postId: string }>;
@@ -50,7 +50,6 @@ export default async function PublicPostPage({ params }: IProps) {
 
   const tags = (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean);
   const voteCount = votes?.length ?? 0;
-  const topLevelComments = (comments ?? []).filter((c: any) => !c.parent_id);
 
   return (
     <div className="min-h-screen bg-background">
@@ -119,44 +118,7 @@ export default async function PublicPostPage({ params }: IProps) {
             </div>
           </div>
 
-          {/* Comments */}
-          {topLevelComments.length > 0 && (
-            <div className="border-t px-5 py-4 space-y-4">
-              <h2 className="text-sm font-semibold">Comments</h2>
-              {topLevelComments.map((c: any) => {
-                const displayName = c.profiles
-                  ? `${c.profiles.first_name} ${c.profiles.last_name}`
-                  : c.guest_name ?? "Anonymous";
-                return (
-                  <div key={c.id} className="flex items-start gap-2">
-                    {c.profiles ? (
-                      <AvatarColor
-                        profile_color={c.profiles.profile_color}
-                        first_name={c.profiles.first_name[0]}
-                        last_name={c.profiles.last_name[0]}
-                        size="small"
-                      />
-                    ) : (
-                      <div className="flex size-7 items-center justify-center rounded-full bg-muted text-xs font-semibold">
-                        {displayName[0]?.toUpperCase() ?? "?"}
-                      </div>
-                    )}
-                    <div>
-                      <p className="text-sm font-semibold">{displayName}</p>
-                      <p className="text-sm text-muted-foreground">
-                        {c.content}
-                      </p>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-
-          {/* Comment form */}
-          <div className="border-t p-2">
-            <PublicCommentForm postId={postId} />
-          </div>
+          <PublicCommentThread postId={postId} initialComments={comments ?? []} />
         </div>
       </div>
     </div>

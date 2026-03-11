@@ -7,7 +7,12 @@ import { cookies } from "next/headers";
 
 async function fireWebhook(
   boardId: string,
-  post: { id: string; title: string; details: string | null; created_at: string },
+  post: {
+    id: string;
+    title: string;
+    details: string | null;
+    created_at: string;
+  },
   boardName: string
 ) {
   const supabase = createClient(cookies());
@@ -28,7 +33,9 @@ async function fireWebhook(
           title: `📬 New Feedback — ${boardName}`,
           description: post.title,
           color: 0x55adfe,
-          fields: post.details ? [{ name: "Details", value: post.details }] : [],
+          fields: post.details
+            ? [{ name: "Details", value: post.details }]
+            : [],
           timestamp: post.created_at,
         },
       ],
@@ -41,7 +48,9 @@ async function fireWebhook(
           type: "section",
           text: {
             type: "mrkdwn",
-            text: `*New Feedback — ${boardName}*\n*${post.title}*${post.details ? `\n${post.details}` : ""}`,
+            text: `*New Feedback — ${boardName}*\n*${post.title}*${
+              post.details ? `\n${post.details}` : ""
+            }`,
           },
         },
       ],
@@ -90,7 +99,7 @@ export async function savePost(values: any): Promise<ActionResult> {
       {
         board_id: parsed.data.board_id,
         title: parsed.data.title,
-        details: parsed.data.title,
+        details: parsed.data.details,
         user_id: user.id,
       },
     ])
@@ -122,7 +131,8 @@ export async function getMyPosts(): Promise<IPost[]> {
 
   const { data, error } = await supabase
     .from("posts")
-    .select(`
+    .select(
+      `
       *,
       profiles (
         first_name,
@@ -136,8 +146,12 @@ export async function getMyPosts(): Promise<IPost[]> {
           color,
           user_id
         )
+      ),
+      comments(
+      count
       )
-    `)
+    `
+    )
     .eq("user_id", user.id);
 
   if (error) throw error;
@@ -145,6 +159,7 @@ export async function getMyPosts(): Promise<IPost[]> {
   return data.map((post: any) => ({
     ...post,
     tags: (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean),
+    comment_count: post.comments?.[0]?.count ?? 0,
   }));
 }
 
