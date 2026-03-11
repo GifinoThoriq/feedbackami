@@ -91,9 +91,7 @@ export default function FeedbackSection({
   );
   const [searchValue, setSearchValue] = useState("");
   const [feedback, setFeedback] = useState<IPost[]>(initialFeedback);
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(
-    initialFeedback[0]?.id ?? null
-  );
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
 
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [comments, setComments] = useState<IComment[]>([]);
@@ -244,6 +242,14 @@ export default function FeedbackSection({
     setFeedback(fresh);
   }, []);
 
+  const handlePostCreated = useCallback(
+    async (newPostId: string) => {
+      await refreshPostList();
+      setSelectedPostId(newPostId);
+    },
+    [refreshPostList]
+  );
+
   const handleVoteToggle = useCallback(async (postId: string) => {
     const updated = await getVotesByPost(postId);
     setVotes(updated);
@@ -263,12 +269,20 @@ export default function FeedbackSection({
     [refreshPostList]
   );
 
+  const handlePostUpdated = useCallback(
+    async (_postId: string) => {
+      await refreshPostList();
+    },
+    [refreshPostList]
+  );
+
   return (
     <>
       <PostForm
         open={isOpenModalPost}
         onOpenChange={setIsOpenModalPost}
         boards={boards}
+        onSuccess={handlePostCreated}
       />
       {feedback.length > 0 ? (
         <>
@@ -386,6 +400,7 @@ export default function FeedbackSection({
                   onVoteToggle={handleVoteToggle}
                   onCommentAdded={handleCommentAdded}
                   onTagsChanged={handleTagsChanged}
+                  onPostUpdated={handlePostUpdated}
                 />
               ) : (
                 <div className="flex h-full items-center justify-center rounded-2xl border bg-card text-sm text-muted-foreground">

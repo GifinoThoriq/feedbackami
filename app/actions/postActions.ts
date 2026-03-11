@@ -75,7 +75,7 @@ async function fireWebhook(
   }).catch(() => {});
 }
 
-type ActionResult = { ok: true } | { ok: false; error: string };
+type ActionResult = { ok: true; id: string } | { ok: false; error: string };
 
 export async function savePost(values: any): Promise<ActionResult> {
   const parsed = createPostSchema.safeParse(values);
@@ -117,7 +117,7 @@ export async function savePost(values: any): Promise<ActionResult> {
     fireWebhook(parsed.data.board_id, inserted, board?.name ?? "Board");
   }
 
-  return { ok: true };
+  return { ok: true, id: inserted!.id };
 }
 
 export async function getMyPosts(): Promise<IPost[]> {
@@ -175,7 +175,7 @@ export async function updatePostStatus(
     .eq("id", postId);
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return { ok: true, id: postId };
 }
 
 export async function updatePostBoard(
@@ -190,5 +190,5 @@ export async function updatePostBoard(
     .eq("id", postId);
 
   if (error) return { ok: false, error: error.message };
-  return { ok: true };
+  return { ok: true, id: boardId };
 }

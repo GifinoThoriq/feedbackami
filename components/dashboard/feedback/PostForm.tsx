@@ -24,18 +24,16 @@ import { IBoard } from "@/interface/board.interface";
 import { CreatePostInput, createPostSchema } from "@/lib/validation/post";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { redirect, useRouter } from "next/navigation";
 import { Controller, useForm } from "react-hook-form";
 
 interface IProps {
   open: boolean;
   onOpenChange: (e: boolean) => void;
   boards: IBoard[];
+  onSuccess?: (newPostId: string) => void;
 }
 
-export function PostForm({ open, onOpenChange, boards }: IProps) {
-  const router = useRouter();
-
+export function PostForm({ open, onOpenChange, boards, onSuccess }: IProps) {
   const {
     register,
     handleSubmit,
@@ -53,8 +51,8 @@ export function PostForm({ open, onOpenChange, boards }: IProps) {
       console.log(res.error);
       return;
     } else {
-      onOpenChange(false)
-      router.push("/dashboard/feedback");
+      onOpenChange(false);
+      onSuccess?.(res.id);
     }
   };
 

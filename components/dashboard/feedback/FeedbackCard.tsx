@@ -50,6 +50,7 @@ interface IProps {
   onVoteToggle: (postId: string) => void;
   onCommentAdded: (postId: string) => void;
   onTagsChanged: (postId: string) => void;
+  onPostUpdated: (postId: string) => void;
 }
 
 function CommentItem({
@@ -127,6 +128,7 @@ export default function FeedbackCard({
   onVoteToggle,
   onCommentAdded,
   onTagsChanged,
+  onPostUpdated,
 }: IProps) {
   const [isPending, startTransition] = useTransition();
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -229,12 +231,14 @@ export default function FeedbackCard({
   function handleStatusChange(statusId: string) {
     startTransition(async () => {
       await updatePostStatus(selectedPost.id, statusId);
+      onPostUpdated(selectedPost.id);
     });
   }
 
   function handleBoardChange(boardId: string) {
     startTransition(async () => {
       await updatePostBoard(selectedPost.id, boardId);
+      onPostUpdated(selectedPost.id);
     });
   }
 
@@ -318,24 +322,6 @@ export default function FeedbackCard({
                   {selectedPost.details ??
                     "This post does not have additional details yet. Add a description so everyone has context."}
                 </p>
-                <div className="flex items-center mt-2 cursor-pointer gap-2">
-                  {isOwner && (
-                    <a className="text-xs text-muted-foreground hover:text-foreground">
-                      Edit Post
-                    </a>
-                  )}
-                  <a
-                    onClick={() => textareaRef.current?.focus()}
-                    className="text-xs text-muted-foreground hover:text-foreground cursor-pointer"
-                  >
-                    Reply
-                  </a>
-                  {isOwner && (
-                    <a className="text-xs text-muted-foreground hover:text-foreground">
-                      Delete Post
-                    </a>
-                  )}
-                </div>
               </div>
             </div>
           </div>
