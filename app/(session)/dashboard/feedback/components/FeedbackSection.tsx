@@ -34,6 +34,7 @@ interface IProps {
   selectedBoardIds: string[];
   selectedStatusIds: string[];
   dateRange: DateRange | undefined;
+  initialPostId?: string;
 }
 
 const toDate = (value: string | Date) => {
@@ -84,6 +85,7 @@ export default function FeedbackSection({
   selectedBoardIds,
   selectedStatusIds,
   dateRange,
+  initialPostId,
 }: IProps) {
   const [isOpenModalPost, setIsOpenModalPost] = useState(false);
   const [listFilter, setListFilter] = useState<"default" | "trending">(
@@ -91,7 +93,9 @@ export default function FeedbackSection({
   );
   const [searchValue, setSearchValue] = useState("");
   const [feedback, setFeedback] = useState<IPost[]>(initialFeedback);
-  const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [selectedPostId, setSelectedPostId] = useState<string | null>(
+    initialPostId ?? null
+  );
 
   const [isLoadingPost, setIsLoadingPost] = useState(true);
   const [comments, setComments] = useState<IComment[]>([]);

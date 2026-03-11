@@ -18,6 +18,7 @@ interface IProps {
   statuses: IStatus[];
   feedback: IPost[];
   author: User | null;
+  initialPostId?: string;
 }
 
 export default function FeedbackPageClient({
@@ -25,6 +26,7 @@ export default function FeedbackPageClient({
   statuses,
   feedback,
   author,
+  initialPostId,
 }: IProps) {
   const [selectedBoardIds, setSelectedBoardIds] = useState<string[]>([]);
   const [selectedStatusIds, setSelectedStatusIds] = useState<string[]>([]);
@@ -112,6 +114,7 @@ export default function FeedbackPageClient({
           selectedBoardIds={selectedBoardIds}
           selectedStatusIds={selectedStatusIds}
           dateRange={dateRange}
+          initialPostId={initialPostId}
         />
       </div>
     </div>

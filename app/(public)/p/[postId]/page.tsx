@@ -1,11 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import AvatarColor from "@/components/ui/avatar-color";
-import { ArrowBigUpDash } from "lucide-react";
 import { statusColorMap } from "@/lib/color";
 import { cn } from "@/lib/utils";
 import PublicCommentThread from "./PublicCommentThread";
+import PublicVoteButton from "./PublicVoteButton";
+import PublicNavbar from "./PublicNavbar";
 
 interface IProps {
   params: Promise<{ postId: string }>;
@@ -32,6 +33,15 @@ export default async function PublicPostPage({ params }: IProps) {
 
   if (!post) notFound();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  // Own post → redirect to dashboard with this post pre-selected
+  if (user && post.user_id === user.id) {
+    redirect(`/dashboard/feedback?postId=${postId}`);
+  }
+
   const { data: comments } = await supabase
     .from("comments")
     .select(
@@ -48,19 +58,43 @@ export default async function PublicPostPage({ params }: IProps) {
     .select("id")
     .eq("post_id", postId);
 
+  // Auth non-owner: fetch profile and check if they voted
+  let profile = null;
+  let userHasVoted = false;
+  if (user) {
+    const [{ data: profileData }, { data: myVote }] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select("first_name, last_name, profile_color")
+        .eq("id", user.id)
+        .single(),
+      supabase
+        .from("votes")
+        .select("id")
+        .eq("post_id", postId)
+        .eq("user_id", user.id)
+        .maybeSingle(),
+    ]);
+    profile = profileData;
+    userHasVoted = !!myVote;
+  }
+
   const tags = (post.post_tags ?? []).map((pt: any) => pt.tags).filter(Boolean);
   const voteCount = votes?.length ?? 0;
 
   return (
     <div className="min-h-screen bg-background">
+      {user && profile && <PublicNavbar profile={profile} />}
       <div className="max-w-2xl mx-auto px-4 py-10">
         <div className="rounded-xl border bg-card shadow-sm">
           {/* Header */}
           <div className="border-b p-5 flex gap-4 items-center">
-            <div className="flex flex-col items-center">
-              <ArrowBigUpDash className="text-primary" />
-              <span className="text-sm font-bold">{voteCount}</span>
-            </div>
+            <PublicVoteButton
+              postId={postId}
+              initialCount={voteCount}
+              isAuthenticated={!!user}
+              initialHasVoted={userHasVoted}
+            />
             <div className="flex grow items-start justify-between">
               <div className="flex flex-col gap-2">
                 <h1 className="font-semibold text-xl flex-1">{post.title}</h1>

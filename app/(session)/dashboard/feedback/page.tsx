@@ -7,8 +7,13 @@ import { createClient } from "@/lib/supabase/server";
 import { cookies } from "next/headers";
 import FeedbackPageClient from "./components/FeedbackPageClient";
 
-export default async function Feedback() {
+export default async function Feedback({
+  searchParams,
+}: {
+  searchParams: Promise<{ postId?: string }>;
+}) {
   const supabase = createClient(cookies());
+  const { postId } = await searchParams;
 
   const [boards, status, feedback, { data: auth }] = await Promise.all([
     getBoards(),
@@ -23,6 +28,7 @@ export default async function Feedback() {
       statuses={status}
       feedback={feedback}
       author={auth.user}
+      initialPostId={postId}
     />
   );
 }
