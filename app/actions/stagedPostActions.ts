@@ -95,7 +95,8 @@ export async function triggerProcess(boardId: string): Promise<ActionResult> {
   if (!res.ok) {
     const body = await res.json().catch(() => ({}));
     if (res.status === 429 || body.error === "quota_exceeded") {
-      return { ok: false, error: body.message ?? "Sorry, the AI API daily limit has been reached. Try again tomorrow." };
+      const detail = body.rawError ? ` (${body.rawError})` : "";
+      return { ok: false, error: `${body.message ?? "Sorry, the AI API daily limit has been reached. Try again tomorrow."}${detail}` };
     }
     return { ok: false, error: body.error ?? "Process failed" };
   }

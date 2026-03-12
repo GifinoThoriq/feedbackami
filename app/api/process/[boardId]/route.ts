@@ -78,15 +78,18 @@ ${messages.join("\n")}`;
       msg.toLowerCase().includes("quota") ||
       msg.toLowerCase().includes("exhausted");
     if (isQuota) {
+      console.error("[process] Gemini quota/rate error:", aiErr);
       return NextResponse.json(
         {
           error: "quota_exceeded",
           message:
             "Sorry, the AI API daily limit has been reached. Try again tomorrow.",
+          rawError: msg,
         },
         { status: 429 }
       );
     }
+    console.error("[process] Gemini error:", aiErr);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
