@@ -90,12 +90,15 @@ ${messages.join("\n")}`;
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
+  // Strip markdown code fences Gemini sometimes adds (```json ... ```)
+  const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+
   let groups: Array<{ title: string; details: string; indices: number[] }> = [];
   try {
-    groups = JSON.parse(rawText);
+    groups = JSON.parse(jsonText);
   } catch {
     return NextResponse.json(
-      { error: "Failed to parse AI response", raw: rawText },
+      { error: "Failed to parse AI response", raw: jsonText },
       { status: 500 }
     );
   }
