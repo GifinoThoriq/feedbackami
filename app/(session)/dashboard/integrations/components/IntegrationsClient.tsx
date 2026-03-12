@@ -121,6 +121,7 @@ export default function IntegrationsClient({ boards }: IProps) {
   const [inboundSources, setInboundSources] = useState<IInboundSource[]>([]);
   const [inboundType, setInboundType] = useState<InboundType>("custom");
   const [inboundLabel, setInboundLabel] = useState("");
+  const [inboundBoardId, setInboundBoardId] = useState<string>("");
   const [inboundResult, setInboundResult] = useState<{ endpointUrl: string; token: string } | null>(null);
   const [inboundMessage, setInboundMessage] = useState<string | null>(null);
   const [inboundPending, startInboundTransition] = useTransition();
@@ -185,15 +186,16 @@ export default function IntegrationsClient({ boards }: IProps) {
   }
 
   function handleAddInbound() {
-    if (!selectedBoardId) return;
     startInboundTransition(async () => {
-      const result = await saveInboundSource(selectedBoardId, inboundType, inboundLabel);
+      const result = await saveInboundSource(inboundBoardId || null, inboundType, inboundLabel);
       if (result.ok) {
         setInboundResult({ endpointUrl: result.endpointUrl, token: result.token });
         setInboundLabel("");
         setInboundMessage(null);
-        const updated = await getInboundSources(selectedBoardId);
-        setInboundSources(updated);
+        if (inboundBoardId) {
+          const updated = await getInboundSources(inboundBoardId);
+          setInboundSources(updated);
+        }
       } else {
         setInboundMessage(`Error: ${result.error}`);
       }
@@ -450,6 +452,21 @@ export default function IntegrationsClient({ boards }: IProps) {
             ))}
           </div>
 
+          {/* Board assignment (optional) */}
+          <div className="space-y-1.5">
+            <label className="text-sm font-medium">Board <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <select
+              className="w-full border rounded-md px-3 py-2 text-sm bg-background"
+              value={inboundBoardId}
+              onChange={(e) => setInboundBoardId(e.target.value)}
+            >
+              <option value="">No board (global — assign when processing)</option>
+              {boards.map((b) => (
+                <option key={b.id} value={b.id}>{b.name}</option>
+              ))}
+            </select>
+          </div>
+
           <Input
             placeholder="Label (optional, e.g. #product-feedback)"
             value={inboundLabel}
@@ -458,7 +475,7 @@ export default function IntegrationsClient({ boards }: IProps) {
 
           <Button
             size="sm"
-            disabled={inboundPending || !selectedBoardId}
+            disabled={inboundPending}
             onClick={handleAddInbound}
           >
             Generate Endpoint

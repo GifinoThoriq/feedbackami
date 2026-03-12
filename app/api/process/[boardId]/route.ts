@@ -4,6 +4,8 @@ import { createServiceClient } from "@/lib/supabase/service";
 import { cookies } from "next/headers";
 import Groq from "groq-sdk";
 
+const BATCH_SIZE = 7;
+
 export async function POST(
   _req: NextRequest,
   { params }: { params: Promise<{ boardId: string }> }
@@ -32,11 +34,11 @@ export async function POST(
 
   const service = createServiceClient();
 
-  // Fetch unprocessed feedback
+  // Fetch unprocessed boardless feedback
   const { data: rows, error } = await service
     .from("raw_feedback")
     .select("id, content, author")
-    .eq("board_id", boardId)
+    .is("board_id", null)
     .eq("processed", false)
     .order("created_at", { ascending: true });
 
@@ -44,7 +46,7 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  if (!rows || rows.length < 2) {
+  if (!rows || rows.length < 1) {
     return NextResponse.json({
       ok: true,
       grouped: 0,
@@ -52,89 +54,108 @@ export async function POST(
     });
   }
 
-  // Build prompt
-  const messages = rows.map(
-    (r, i) => `[${i}] ${r.author ? `${r.author}: ` : ""}${r.content}`
-  );
-  const prompt = `You are a product feedback analyst. Here are ${
-    rows.length
-  } messages for "${board.name}".
-Group them by theme and return ONLY valid JSON (no markdown, no extra text):
-[{"title":"...","details":"...","indices":[0,1,...]}]
-title max 200 chars, details max 500 chars.
-Messages:
-${messages.join("\n")}`;
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
-  let rawText: string;
-  try {
-    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  async function callGroq(content: string): Promise<string> {
     const completion = await groq.chat.completions.create({
       model: "llama-3.3-70b-versatile",
-      messages: [{ role: "user", content: prompt }],
+      messages: [{ role: "user", content }],
     });
-    rawText = completion.choices[0].message.content?.trim() ?? "";
-  } catch (aiErr: unknown) {
-    const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
-    const isQuota =
-      (aiErr as { status?: number })?.status === 429 ||
-      msg.toLowerCase().includes("rate limit") ||
-      msg.toLowerCase().includes("quota");
-    if (isQuota) {
-      console.error("[process] Groq rate limit error:", aiErr);
-      return NextResponse.json(
-        {
-          error: "quota_exceeded",
-          message: "Sorry, the AI API rate limit has been reached. Try again in a moment.",
-          rawError: msg,
-        },
-        { status: 429 }
-      );
-    }
-    console.error("[process] Groq error:", aiErr);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return completion.choices[0].message.content?.trim() ?? "";
   }
 
-  // Strip markdown code fences Groq models sometimes add (```json ... ```)
-  const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
-
-  let groups: Array<{ title: string; details: string; indices: number[] }> = [];
-  try {
-    groups = JSON.parse(jsonText);
-  } catch {
-    return NextResponse.json(
-      { error: "Failed to parse AI response", raw: jsonText },
-      { status: 500 }
-    );
+  // Chunk into batches
+  const batches: typeof rows[] = [];
+  for (let i = 0; i < rows.length; i += BATCH_SIZE) {
+    batches.push(rows.slice(i, i + BATCH_SIZE));
   }
 
-  if (!Array.isArray(groups) || groups.length === 0) {
-    return NextResponse.json({ ok: true, grouped: 0 });
-  }
-
-  // Insert staged posts and mark feedback as processed
   const usedIds: string[] = [];
 
-  for (const group of groups) {
-    const feedbackIds = (group.indices ?? [])
-      .filter((i: number) => i >= 0 && i < rows.length)
-      .map((i: number) => rows[i].id);
+  for (const batch of batches) {
+    const messages = batch.map(
+      (r, i) => `[${i + 1}] ${r.author ? `${r.author}: ` : ""}${r.content}`
+    );
+
+    // Step 1: Summarize the batch
+    let summary: string;
+    try {
+      summary = await callGroq(
+        `Summarize the key themes and concerns from these ${batch.length} product feedback messages in 2-3 sentences:\n${messages.join("\n")}`
+      );
+    } catch (aiErr: unknown) {
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      const isQuota =
+        (aiErr as { status?: number })?.status === 429 ||
+        msg.toLowerCase().includes("rate limit") ||
+        msg.toLowerCase().includes("quota");
+      if (isQuota) {
+        console.error("[process] Groq rate limit error:", aiErr);
+        return NextResponse.json(
+          {
+            error: "quota_exceeded",
+            message: "Sorry, the AI API rate limit has been reached. Try again in a moment.",
+            rawError: msg,
+          },
+          { status: 429 }
+        );
+      }
+      console.error("[process] Groq error:", aiErr);
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+
+    // Step 2: Generate staged post from summary
+    let rawJson: string;
+    try {
+      rawJson = await callGroq(
+        `You are a product feedback analyst. Based on this summary of user feedback for "${board.name}", generate a single staged post.\nReturn ONLY valid JSON (no markdown): {"title":"...","details":"..."}\ntitle max 200 chars, details max 500 chars.\nSummary:\n${summary}`
+      );
+    } catch (aiErr: unknown) {
+      const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
+      const isQuota =
+        (aiErr as { status?: number })?.status === 429 ||
+        msg.toLowerCase().includes("rate limit") ||
+        msg.toLowerCase().includes("quota");
+      if (isQuota) {
+        console.error("[process] Groq rate limit error:", aiErr);
+        return NextResponse.json(
+          {
+            error: "quota_exceeded",
+            message: "Sorry, the AI API rate limit has been reached. Try again in a moment.",
+            rawError: msg,
+          },
+          { status: 429 }
+        );
+      }
+      console.error("[process] Groq error:", aiErr);
+      return NextResponse.json({ error: msg }, { status: 500 });
+    }
+
+    // Strip markdown fences, parse
+    const jsonText = rawJson.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
+    let post: { title: string; details: string };
+    try {
+      post = JSON.parse(jsonText);
+    } catch {
+      continue; // skip bad batch, don't fail the whole request
+    }
 
     await service.from("staged_posts").insert({
       board_id: boardId,
-      title: group.title.slice(0, 200),
-      details: group.details?.slice(0, 500) ?? null,
-      raw_feedback_ids: feedbackIds,
+      title: post.title.slice(0, 200),
+      details: post.details?.slice(0, 500) ?? null,
+      raw_feedback_ids: batch.map((r) => r.id),
     });
 
-    usedIds.push(...feedbackIds);
+    usedIds.push(...batch.map((r) => r.id));
   }
 
   if (usedIds.length > 0) {
     await service
       .from("raw_feedback")
-      .update({ processed: true })
+      .update({ processed: true, board_id: boardId })
       .in("id", usedIds);
   }
 
-  return NextResponse.json({ ok: true, grouped: groups.length });
+  return NextResponse.json({ ok: true, grouped: batches.length });
 }

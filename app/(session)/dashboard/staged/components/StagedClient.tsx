@@ -9,6 +9,14 @@ import {
   triggerProcess,
 } from "@/app/actions/stagedPostActions";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from "@/components/ui/dialog";
 import { Check, Trash2, Zap } from "lucide-react";
 
 interface IProps {
@@ -19,6 +27,18 @@ interface IProps {
 export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
   const [stagedByBoard, setStagedByBoard] = useState(initialStagedByBoard);
   const [messages, setMessages] = useState<Record<string, string>>({});
+  const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({
+    open: false,
+    message: "",
+  });
+  const [processDialog, setProcessDialog] = useState<{ open: boolean; selectedBoardId: string }>({
+    open: false,
+    selectedBoardId: boards[0]?.id ?? "",
+  });
+  const [discardAllDialog, setDiscardAllDialog] = useState<{ open: boolean; boardId: string }>({
+    open: false,
+    boardId: "",
+  });
   const [pending, startTransition] = useTransition();
 
   function setMsg(boardId: string, msg: string) {
@@ -35,7 +55,7 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
         }));
         setMsg(staged.board_id, "Post published.");
       } else {
-        setMsg(staged.board_id, `Error: ${result.error}`);
+        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
       }
     });
   }
@@ -49,7 +69,19 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
           [staged.board_id]: prev[staged.board_id].filter((s) => s.id !== staged.id),
         }));
       } else {
-        setMsg(staged.board_id, `Error: ${result.error}`);
+        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
+      }
+    });
+  }
+
+  function handleDiscardAll(boardId: string) {
+    startTransition(async () => {
+      const { discardAllStagedPosts } = await import("@/app/actions/stagedPostActions");
+      const result = await discardAllStagedPosts(boardId);
+      if (result.ok) {
+        setStagedByBoard((prev) => ({ ...prev, [boardId]: [] }));
+      } else {
+        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
       }
     });
   }
@@ -67,7 +99,7 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
           ? "New drafts created."
           : "Processing done — no new groups found.");
       } else {
-        setMsg(boardId, `Error: ${result.error}`);
+        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
       }
     });
   }
@@ -107,7 +139,7 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
                 size="sm"
                 variant="outline"
                 disabled={pending}
-                onClick={() => handleProcess(b.id)}
+                onClick={() => setProcessDialog({ open: true, selectedBoardId: b.id })}
               >
                 <Zap className="size-3.5 mr-1.5" />
                 Process — {b.name}
@@ -130,15 +162,29 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
                       </span>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => handleProcess(board.id)}
-                  >
-                    <Zap className="size-3.5 mr-1.5" />
-                    Process new feedback
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    {drafts.length > 0 && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-muted-foreground hover:text-destructive"
+                        disabled={pending}
+                        onClick={() => setDiscardAllDialog({ open: true, boardId: board.id })}
+                      >
+                        <Trash2 className="size-3.5 mr-1.5" />
+                        Discard all
+                      </Button>
+                    )}
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      disabled={pending}
+                      onClick={() => setProcessDialog({ open: true, selectedBoardId: board.id })}
+                    >
+                      <Zap className="size-3.5 mr-1.5" />
+                      Process new feedback
+                    </Button>
+                  </div>
                 </div>
 
                 {messages[board.id] && (
@@ -197,6 +243,83 @@ export default function StagedClient({ boards, initialStagedByBoard }: IProps) {
           })}
         </div>
       )}
+
+      <Dialog
+        open={errorDialog.open}
+        onOpenChange={(open) => setErrorDialog((prev) => ({ ...prev, open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Something went wrong</DialogTitle>
+            <DialogDescription>{errorDialog.message}</DialogDescription>
+          </DialogHeader>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={processDialog.open}
+        onOpenChange={(open) => setProcessDialog((p) => ({ ...p, open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Process feedback</DialogTitle>
+            <DialogDescription>
+              Select the board to process unassigned feedback into.
+            </DialogDescription>
+          </DialogHeader>
+          <select
+            className="w-full border rounded-md px-3 py-2 text-sm my-2 bg-background"
+            value={processDialog.selectedBoardId}
+            onChange={(e) => setProcessDialog((p) => ({ ...p, selectedBoardId: e.target.value }))}
+          >
+            {boards.map((b) => (
+              <option key={b.id} value={b.id}>{b.name}</option>
+            ))}
+          </select>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setProcessDialog((p) => ({ ...p, open: false }))}>
+              Cancel
+            </Button>
+            <Button
+              disabled={!processDialog.selectedBoardId}
+              onClick={() => {
+                setProcessDialog((p) => ({ ...p, open: false }));
+                handleProcess(processDialog.selectedBoardId);
+              }}
+            >
+              <Zap className="size-3.5 mr-1.5" />Process
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={discardAllDialog.open}
+        onOpenChange={(open) => setDiscardAllDialog((p) => ({ ...p, open }))}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Discard all drafts?</DialogTitle>
+            <DialogDescription>
+              This will permanently delete all staged drafts for this board.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDiscardAllDialog((p) => ({ ...p, open: false }))}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => {
+                setDiscardAllDialog((p) => ({ ...p, open: false }));
+                handleDiscardAll(discardAllDialog.boardId);
+              }}
+            >
+              Discard all
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

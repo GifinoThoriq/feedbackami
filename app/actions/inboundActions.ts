@@ -24,7 +24,7 @@ export async function getInboundSources(boardId: string): Promise<IInboundSource
 }
 
 export async function saveInboundSource(
-  boardId: string,
+  boardId: string | null,
   sourceType: "slack" | "discord" | "custom",
   label: string
 ): Promise<{ ok: true; endpointUrl: string; token: string } | { ok: false; error: string }> {
@@ -36,7 +36,7 @@ export async function saveInboundSource(
 
   const { data, error } = await supabase
     .from("inbound_sources")
-    .insert({ board_id: boardId, user_id: user.id, source_type: sourceType, label: label || null })
+    .insert({ board_id: boardId || null, user_id: user.id, source_type: sourceType, label: label || null })
     .select("id, secret_token")
     .single();
 

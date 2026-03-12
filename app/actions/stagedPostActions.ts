@@ -74,6 +74,22 @@ export async function discardStagedPost(stagedId: string): Promise<ActionResult>
   return { ok: true };
 }
 
+export async function discardAllStagedPosts(boardId: string): Promise<ActionResult> {
+  const supabase = createClient(cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false, error: "Not authenticated" };
+
+  const { error } = await supabase
+    .from("staged_posts")
+    .delete()
+    .eq("board_id", boardId);
+
+  if (error) return { ok: false, error: error.message };
+  return { ok: true };
+}
+
 export async function triggerProcess(boardId: string): Promise<ActionResult> {
   const siteUrl =
     process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
