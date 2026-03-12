@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { createServiceClient } from "@/lib/supabase/service";
 import { cookies } from "next/headers";
-import { GoogleGenerativeAI } from "@google/generative-ai";
+import Groq from "groq-sdk";
 
 export async function POST(
   _req: NextRequest,
@@ -67,33 +67,34 @@ ${messages.join("\n")}`;
 
   let rawText: string;
   try {
-    const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY!);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-    const result = await model.generateContent(prompt);
-    rawText = result.response.text().trim();
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    const completion = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+    });
+    rawText = completion.choices[0].message.content?.trim() ?? "";
   } catch (aiErr: unknown) {
     const msg = aiErr instanceof Error ? aiErr.message : String(aiErr);
     const isQuota =
       (aiErr as { status?: number })?.status === 429 ||
-      msg.toLowerCase().includes("quota") ||
-      msg.toLowerCase().includes("exhausted");
+      msg.toLowerCase().includes("rate limit") ||
+      msg.toLowerCase().includes("quota");
     if (isQuota) {
-      console.error("[process] Gemini quota/rate error:", aiErr);
+      console.error("[process] Groq rate limit error:", aiErr);
       return NextResponse.json(
         {
           error: "quota_exceeded",
-          message:
-            "Sorry, the AI API daily limit has been reached. Try again tomorrow.",
+          message: "Sorry, the AI API rate limit has been reached. Try again in a moment.",
           rawError: msg,
         },
         { status: 429 }
       );
     }
-    console.error("[process] Gemini error:", aiErr);
+    console.error("[process] Groq error:", aiErr);
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 
-  // Strip markdown code fences Gemini sometimes adds (```json ... ```)
+  // Strip markdown code fences Groq models sometimes add (```json ... ```)
   const jsonText = rawText.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/, "").trim();
 
   let groups: Array<{ title: string; details: string; indices: number[] }> = [];
