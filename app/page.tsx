@@ -21,7 +21,7 @@ export default async function Home() {
         <FeaturesSection />
         <HowItWorksSection />
         <TestimonialsSection />
-        <PricingSection />
+        {/* <PricingSection /> */}
         <CTASection />
       </main>
       <Footer />

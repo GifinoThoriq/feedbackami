@@ -24,7 +24,7 @@ export default function Navbar({ userFirstName }: NavbarProps) {
 
         {/* Desktop Nav Links */}
         <div className="hidden md:flex items-center gap-8">
-          <a
+          {/* <a
             href="#features"
             className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
@@ -41,7 +41,7 @@ export default function Navbar({ userFirstName }: NavbarProps) {
             className="text-sm text-gray-600 hover:text-gray-900 transition-colors"
           >
             Pricing
-          </a>
+          </a> */}
         </div>
 
         {/* Desktop Auth Buttons */}
