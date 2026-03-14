@@ -26,7 +26,10 @@ interface IProps {
 type Platform = "discord" | "slack" | "custom";
 type InboundType = "slack" | "discord" | "custom";
 
-const PLATFORM_HELP: Record<Platform, { label: string; instructions: string[] }> = {
+const PLATFORM_HELP: Record<
+  Platform,
+  { label: string; instructions: string[] }
+> = {
   discord: {
     label: "Discord",
     instructions: [
@@ -55,7 +58,10 @@ const PLATFORM_HELP: Record<Platform, { label: string; instructions: string[] }>
   },
 };
 
-const INBOUND_HELP: Record<InboundType, { label: string; instructions: string[] }> = {
+const INBOUND_HELP: Record<
+  InboundType,
+  { label: string; instructions: string[] }
+> = {
   slack: {
     label: "Slack",
     instructions: [
@@ -70,7 +76,7 @@ const INBOUND_HELP: Record<InboundType, { label: string; instructions: string[] 
     instructions: [
       "Discord doesn't have native outgoing webhooks.",
       "Use Zapier, Make (formerly Integromat), or n8n to listen to Discord messages.",
-      "Configure the automation to POST to your endpoint URL with body: { \"content\": \"...\", \"author\": \"...\" }",
+      'Configure the automation to POST to your endpoint URL with body: { "content": "...", "author": "..." }',
       "Add Authorization: Bearer <token> header.",
     ],
   },
@@ -79,7 +85,7 @@ const INBOUND_HELP: Record<InboundType, { label: string; instructions: string[] 
     instructions: [
       "POST JSON to your endpoint URL with Authorization: Bearer <token>.",
       `Body: { "content": "feedback text", "author": "optional name" }`,
-      "Example: curl -X POST <endpoint> -H \"Authorization: Bearer <token>\" -H \"Content-Type: application/json\" -d '{\"content\":\"Add dark mode\"}'",
+      'Example: curl -X POST <endpoint> -H "Authorization: Bearer <token>" -H "Content-Type: application/json" -d \'{"content":"Add dark mode"}\'',
     ],
   },
 };
@@ -168,7 +174,10 @@ export default function IntegrationsClient({ boards }: IProps) {
   const [inboundType, setInboundType] = useState<InboundType>("custom");
   const [inboundLabel, setInboundLabel] = useState("");
   const [inboundBoardId, setInboundBoardId] = useState<string>("");
-  const [inboundResult, setInboundResult] = useState<{ endpointUrl: string; token: string } | null>(null);
+  const [inboundResult, setInboundResult] = useState<{
+    endpointUrl: string;
+    token: string;
+  } | null>(null);
   const [inboundMessage, setInboundMessage] = useState<string | null>(null);
   const [inboundPending, startInboundTransition] = useTransition();
   const [showInboundHelp, setShowInboundHelp] = useState<InboundType>("custom");
@@ -239,9 +248,16 @@ export default function IntegrationsClient({ boards }: IProps) {
 
   function handleAddInbound() {
     startInboundTransition(async () => {
-      const result = await saveInboundSource(inboundBoardId || null, inboundType, inboundLabel);
+      const result = await saveInboundSource(
+        inboundBoardId || null,
+        inboundType,
+        inboundLabel
+      );
       if (result.ok) {
-        setInboundResult({ endpointUrl: result.endpointUrl, token: result.token });
+        setInboundResult({
+          endpointUrl: result.endpointUrl,
+          token: result.token,
+        });
         setInboundLabel("");
         setInboundMessage(null);
         if (inboundBoardId) {
@@ -272,13 +288,15 @@ export default function IntegrationsClient({ boards }: IProps) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[60vh] text-muted-foreground">
         <p className="text-lg">No boards yet.</p>
-        <p className="text-sm mt-1">Create a board first to set up integrations.</p>
+        <p className="text-sm mt-1">
+          Create a board first to set up integrations.
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+    <div className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       <div>
         <h1 className="text-2xl font-semibold">Integrations</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -290,7 +308,8 @@ export default function IntegrationsClient({ boards }: IProps) {
       <section className="space-y-3 rounded-xl border p-5">
         <h2 className="font-semibold text-base">Embed Widget</h2>
         <p className="text-sm text-muted-foreground">
-          Copy this snippet and paste it into any HTML page to embed your feedback board.
+          Copy this snippet and paste it into any HTML page to embed your
+          feedback board.
         </p>
 
         <div className="space-y-1.5">
@@ -309,7 +328,9 @@ export default function IntegrationsClient({ boards }: IProps) {
               const snippet = `<iframe src="${siteUrl}/embed/${b.id}" width="100%" height="600" frameborder="0"></iframe>`;
               return (
                 <div key={b.id} className="space-y-1">
-                  <p className="text-xs font-medium text-muted-foreground">{b.name}</p>
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {b.name}
+                  </p>
                   <div className="relative">
                     <code className="block w-full rounded-md bg-muted p-3 text-xs font-mono break-all pr-10">
                       {snippet}
@@ -378,7 +399,9 @@ export default function IntegrationsClient({ boards }: IProps) {
       {/* Section B: Webhook Notifications */}
       <section className="space-y-4 rounded-xl border p-5">
         <div>
-          <h2 className="font-semibold text-base">Webhook Notifications (Outbound)</h2>
+          <h2 className="font-semibold text-base">
+            Webhook Notifications (Outbound)
+          </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
             Get notified when new feedback is submitted.
           </p>
@@ -420,7 +443,9 @@ export default function IntegrationsClient({ boards }: IProps) {
                     : "border-border hover:border-primary/50"
                 }`}
               >
-                {p === "custom" ? "Custom" : p.charAt(0).toUpperCase() + p.slice(1)}
+                {p === "custom"
+                  ? "Custom"
+                  : p.charAt(0).toUpperCase() + p.slice(1)}
               </button>
             ))}
           </div>
@@ -457,9 +482,7 @@ export default function IntegrationsClient({ boards }: IProps) {
           )}
         </div>
 
-        {message && (
-          <p className="text-sm text-muted-foreground">{message}</p>
-        )}
+        {message && <p className="text-sm text-muted-foreground">{message}</p>}
 
         {/* Platform help */}
         <div className="mt-2 rounded-lg bg-muted/60 p-4 space-y-2">
@@ -479,10 +502,12 @@ export default function IntegrationsClient({ boards }: IProps) {
       {/* Section C: Collect Feedback (Inbound) */}
       <section className="space-y-4 rounded-xl border p-5">
         <div>
-          <h2 className="font-semibold text-base">Collect Feedback (Inbound)</h2>
+          <h2 className="font-semibold text-base">
+            Collect Feedback (Inbound)
+          </h2>
           <p className="text-sm text-muted-foreground mt-0.5">
-            Receive feedback from Slack, Discord, or any HTTP client. Messages are
-            grouped by AI and staged for your review before publishing.
+            Receive feedback from Slack, Discord, or any HTTP client. Messages
+            are grouped by AI and staged for your review before publishing.
           </p>
         </div>
 
@@ -549,14 +574,19 @@ export default function IntegrationsClient({ boards }: IProps) {
             {(["slack", "discord", "custom"] as InboundType[]).map((t) => (
               <button
                 key={t}
-                onClick={() => { setInboundType(t); setShowInboundHelp(t); }}
+                onClick={() => {
+                  setInboundType(t);
+                  setShowInboundHelp(t);
+                }}
                 className={`px-3 py-1.5 rounded-md text-sm border transition capitalize ${
                   inboundType === t
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border hover:border-primary/50"
                 }`}
               >
-                {t === "custom" ? "Custom" : t.charAt(0).toUpperCase() + t.slice(1)}
+                {t === "custom"
+                  ? "Custom"
+                  : t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
           </div>
@@ -571,7 +601,9 @@ export default function IntegrationsClient({ boards }: IProps) {
             >
               <option value="">Global (all boards)</option>
               {boards.map((b) => (
-                <option key={b.id} value={b.id}>{b.name}</option>
+                <option key={b.id} value={b.id}>
+                  {b.name}
+                </option>
               ))}
             </select>
           </div>
@@ -599,7 +631,8 @@ export default function IntegrationsClient({ boards }: IProps) {
         {inboundResult && (
           <div className="rounded-lg border border-green-500/30 bg-green-500/5 p-4 space-y-2">
             <p className="text-sm font-medium text-green-700 dark:text-green-400">
-              Endpoint created! Save these credentials — the token won&apos;t be shown again.
+              Endpoint created! Save these credentials — the token won&apos;t be
+              shown again.
             </p>
             <div className="space-y-1.5">
               <div className="flex items-center gap-2">

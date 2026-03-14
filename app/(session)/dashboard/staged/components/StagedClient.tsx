@@ -27,7 +27,8 @@ interface IProps {
 }
 
 export default function StagedClient({ boards, initialStagedPosts }: IProps) {
-  const [stagedPosts, setStagedPosts] = useState<IStagedPost[]>(initialStagedPosts);
+  const [stagedPosts, setStagedPosts] =
+    useState<IStagedPost[]>(initialStagedPosts);
   const [processMessage, setProcessMessage] = useState<string | null>(null);
   const [approveDialog, setApproveDialog] = useState<{
     open: boolean;
@@ -38,7 +39,10 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
     staged: null,
     selectedBoardId: boards[0]?.id ?? "",
   });
-  const [errorDialog, setErrorDialog] = useState<{ open: boolean; message: string }>({
+  const [errorDialog, setErrorDialog] = useState<{
+    open: boolean;
+    message: string;
+  }>({
     open: false,
     message: "",
   });
@@ -62,7 +66,10 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
       if (result.ok) {
         setStagedPosts((prev) => prev.filter((s) => s.id !== staged.id));
       } else {
-        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
+        setErrorDialog({
+          open: true,
+          message: result.error ?? "Something went wrong.",
+        });
       }
     });
   }
@@ -73,7 +80,10 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
       if (result.ok) {
         setStagedPosts((prev) => prev.filter((s) => s.id !== staged.id));
       } else {
-        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
+        setErrorDialog({
+          open: true,
+          message: result.error ?? "Something went wrong.",
+        });
       }
     });
   }
@@ -85,7 +95,10 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
       if (result.ok) {
         setStagedPosts([]);
       } else {
-        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
+        setErrorDialog({
+          open: true,
+          message: result.error ?? "Something went wrong.",
+        });
       }
     });
   }
@@ -104,13 +117,16 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
         );
       } else {
         setProcessMessage(null);
-        setErrorDialog({ open: true, message: result.error ?? "Something went wrong." });
+        setErrorDialog({
+          open: true,
+          message: result.error ?? "Something went wrong.",
+        });
       }
     });
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-4 py-8 space-y-8">
+    <div className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8 space-y-8">
       <div className="flex items-start justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold">Staging Area</h1>
@@ -131,7 +147,12 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
               Discard all
             </Button>
           )}
-          <Button size="sm" variant="outline" disabled={pending} onClick={handleProcess}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={pending}
+            onClick={handleProcess}
+          >
             <Zap className="size-3.5 mr-1.5" />
             Process new feedback
           </Button>
@@ -148,13 +169,19 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
         </div>
       ) : stagedPosts.length === 0 ? (
         <div className="flex flex-col items-center justify-center min-h-[40vh] text-center space-y-3 text-muted-foreground">
-          <p className="text-base">No drafts yet — process incoming feedback to generate posts.</p>
+          <p className="text-base">
+            No drafts yet — process incoming feedback to generate posts.
+          </p>
           <p className="text-sm">
             Use the{" "}
-            <a href="/dashboard/integrations" className="text-primary hover:underline">
+            <a
+              href="/dashboard/integrations"
+              className="text-primary hover:underline"
+            >
               Integrations page
             </a>{" "}
-            to set up inbound sources, then click &quot;Process new feedback&quot; above.
+            to set up inbound sources, then click &quot;Process new
+            feedback&quot; above.
           </p>
         </div>
       ) : (
@@ -164,7 +191,9 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
               <div className="space-y-1">
                 <p className="font-medium text-sm">{staged.title}</p>
                 {staged.details && (
-                  <p className="text-sm text-muted-foreground">{staged.details}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {staged.details}
+                  </p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   {staged.raw_feedback_ids.length} source message
@@ -209,17 +238,24 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
             </DialogDescription>
           </DialogHeader>
           {approveDialog.staged && (
-            <p className="text-sm font-medium truncate">{approveDialog.staged.title}</p>
+            <p className="text-sm font-medium truncate">
+              {approveDialog.staged.title}
+            </p>
           )}
           <select
             className="w-full border rounded-md px-3 py-2 text-sm my-2 bg-background"
             value={approveDialog.selectedBoardId}
             onChange={(e) =>
-              setApproveDialog((p) => ({ ...p, selectedBoardId: e.target.value }))
+              setApproveDialog((p) => ({
+                ...p,
+                selectedBoardId: e.target.value,
+              }))
             }
           >
             {boards.map((b) => (
-              <option key={b.id} value={b.id}>{b.name}</option>
+              <option key={b.id} value={b.id}>
+                {b.name}
+              </option>
             ))}
           </select>
           <DialogFooter>
@@ -263,7 +299,10 @@ export default function StagedClient({ boards, initialStagedPosts }: IProps) {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDiscardAllDialog(false)}>
+            <Button
+              variant="outline"
+              onClick={() => setDiscardAllDialog(false)}
+            >
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDiscardAll}>

@@ -39,7 +39,10 @@ export default async function Dashboard() {
   const boardById = Object.fromEntries(boards.map((b) => [b.id, b]));
 
   const totalVotes = Object.values(votesByPost).reduce((a, b) => a + b, 0);
-  const totalComments = Object.values(commentsByPost).reduce((a, b) => a + b, 0);
+  const totalComments = Object.values(commentsByPost).reduce(
+    (a, b) => a + b,
+    0
+  );
 
   const postsByStatus: Record<string, number> = {};
   for (const post of posts) {
@@ -67,77 +70,152 @@ export default async function Dashboard() {
 
   return (
     <div className="flex-1 overflow-y-auto">
-    <div className="mx-auto w-full max-w-4xl px-4 py-8 sm:px-6 lg:px-8 space-y-8">
-      <div>
-        <h1 className="font-bold text-3xl">Overview</h1>
-        <p className="text-muted-foreground text-sm mt-1">
-          A summary of your boards and feedback.
-        </p>
-      </div>
+      <div className="mx-auto w-full px-4 py-8 sm:px-6 lg:px-8 space-y-8">
+        <div>
+          <h1 className="font-bold text-3xl">Overview</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            A summary of your boards and feedback.
+          </p>
+        </div>
 
-      {/* Stats Row */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-        <StatCard icon={<FileText className="size-4" />} label="Total Posts" value={posts.length} />
-        <StatCard icon={<ThumbsUp className="size-4" />} label="Total Votes" value={totalVotes} />
-        <StatCard icon={<MessageSquare className="size-4" />} label="Total Comments" value={totalComments} />
-        <StatCard icon={<LayoutGrid className="size-4" />} label="Boards" value={boards.length} />
-      </div>
+        {/* Stats Row */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          <StatCard
+            icon={<FileText className="size-4" />}
+            label="Total Posts"
+            value={posts.length}
+          />
+          <StatCard
+            icon={<ThumbsUp className="size-4" />}
+            label="Total Votes"
+            value={totalVotes}
+          />
+          <StatCard
+            icon={<MessageSquare className="size-4" />}
+            label="Total Comments"
+            value={totalComments}
+          />
+          <StatCard
+            icon={<LayoutGrid className="size-4" />}
+            label="Boards"
+            value={boards.length}
+          />
+        </div>
 
-      {/* Posts by Status */}
-      {Object.keys(postsByStatus).length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-            Posts by Status
-          </h2>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(postsByStatus).map(([name, count]) => {
-              const colors = statusColorMap[name];
-              return (
-                <span
-                  key={name}
-                  className={cn(
-                    "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border",
-                    colors?.bg,
-                    colors?.text,
-                    colors?.border
-                  )}
-                >
-                  {name} · {count}
-                </span>
-              );
-            })}
-          </div>
-        </section>
-      )}
+        {/* Posts by Status */}
+        {Object.keys(postsByStatus).length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+              Posts by Status
+            </h2>
+            <div className="flex flex-wrap gap-2">
+              {Object.entries(postsByStatus).map(([name, count]) => {
+                const colors = statusColorMap[name];
+                return (
+                  <span
+                    key={name}
+                    className={cn(
+                      "inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium border",
+                      colors?.bg,
+                      colors?.text,
+                      colors?.border
+                    )}
+                  >
+                    {name} · {count}
+                  </span>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-      {/* Top Posts by Votes */}
-      {topPosts.length > 0 && (
-        <section>
-          <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-            Top Posts by Votes
-          </h2>
-          <div className="rounded-lg border divide-y">
-            {topPosts.map((post) => {
-              const status = post.status_id ? statusById[post.status_id] : null;
-              const board = boardById[post.board_id];
-              const colors = status ? statusColorMap[status.name] : null;
-              return (
-                <Link
-                  key={post.id}
-                  href="/dashboard/feedback"
-                  className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{post.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {board?.name ?? "—"}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-3 ml-4 shrink-0">
+        {/* Top Posts by Votes */}
+        {topPosts.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+              Top Posts by Votes
+            </h2>
+            <div className="rounded-lg border divide-y">
+              {topPosts.map((post) => {
+                const status = post.status_id
+                  ? statusById[post.status_id]
+                  : null;
+                const board = boardById[post.board_id];
+                const colors = status ? statusColorMap[status.name] : null;
+                return (
+                  <Link
+                    key={post.id}
+                    href="/dashboard/feedback"
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {post.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {board?.name ?? "—"}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-3 ml-4 shrink-0">
+                      {status && colors && (
+                        <span
+                          className={cn(
+                            "text-xs px-2 py-0.5 rounded-full border font-medium",
+                            colors.bg,
+                            colors.text,
+                            colors.border
+                          )}
+                        >
+                          {status.name}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <ThumbsUp className="size-3" />
+                        {votesByPost[post.id] ?? 0}
+                      </span>
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
+
+        {/* Recent Posts */}
+        {recentPosts.length > 0 && (
+          <section>
+            <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
+              Recent Posts
+            </h2>
+            <div className="rounded-lg border divide-y">
+              {recentPosts.map((post) => {
+                const status = post.status_id
+                  ? statusById[post.status_id]
+                  : null;
+                const board = boardById[post.board_id];
+                const colors = status ? statusColorMap[status.name] : null;
+                const date = new Date(post.created_at).toLocaleDateString(
+                  "en-US",
+                  { month: "short", day: "numeric", year: "numeric" }
+                );
+                return (
+                  <Link
+                    key={post.id}
+                    href="/dashboard/feedback"
+                    className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-medium truncate">
+                        {post.title}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {board?.name ?? "—"} · {date}
+                      </p>
+                    </div>
                     {status && colors && (
                       <span
                         className={cn(
-                          "text-xs px-2 py-0.5 rounded-full border font-medium",
+                          "ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full border font-medium",
                           colors.bg,
                           colors.text,
                           colors.border
@@ -146,95 +224,44 @@ export default async function Dashboard() {
                         {status.name}
                       </span>
                     )}
-                    <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                      <ThumbsUp className="size-3" />
-                      {votesByPost[post.id] ?? 0}
-                    </span>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
+                  </Link>
+                );
+              })}
+            </div>
+          </section>
+        )}
 
-      {/* Recent Posts */}
-      {recentPosts.length > 0 && (
+        {/* Your Boards */}
         <section>
           <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-            Recent Posts
+            Your Boards
           </h2>
-          <div className="rounded-lg border divide-y">
-            {recentPosts.map((post) => {
-              const status = post.status_id ? statusById[post.status_id] : null;
-              const board = boardById[post.board_id];
-              const colors = status ? statusColorMap[status.name] : null;
-              const date = new Date(post.created_at).toLocaleDateString(
-                "en-US",
-                { month: "short", day: "numeric", year: "numeric" }
-              );
-              return (
-                <Link
-                  key={post.id}
-                  href="/dashboard/feedback"
-                  className="flex items-center justify-between px-4 py-3 hover:bg-muted/50 transition-colors"
-                >
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate">{post.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {board?.name ?? "—"} · {date}
-                    </p>
-                  </div>
-                  {status && colors && (
-                    <span
-                      className={cn(
-                        "ml-4 shrink-0 text-xs px-2 py-0.5 rounded-full border font-medium",
-                        colors.bg,
-                        colors.text,
-                        colors.border
-                      )}
-                    >
-                      {status.name}
-                    </span>
-                  )}
-                </Link>
-              );
-            })}
-          </div>
-        </section>
-      )}
-
-      {/* Your Boards */}
-      <section>
-        <h2 className="text-sm font-semibold mb-3 text-muted-foreground uppercase tracking-wide">
-          Your Boards
-        </h2>
-        {boardsWithCount.length === 0 ? (
-          <p className="text-sm text-muted-foreground">
-            No boards yet.{" "}
-            <Link href="/dashboard/board" className="text-primary underline">
-              Create one
-            </Link>
-            .
-          </p>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {boardsWithCount.map((board) => (
-              <Link
-                key={board.id}
-                href={`/dashboard/feedback?board=${board.id}`}
-                className="rounded-lg border px-4 py-4 hover:bg-muted/50 transition-colors flex flex-col gap-1"
-              >
-                <p className="font-medium text-sm">{board.name}</p>
-                <p className="text-xs text-muted-foreground">
-                  {board.postCount} {board.postCount === 1 ? "post" : "posts"}
-                </p>
+          {boardsWithCount.length === 0 ? (
+            <p className="text-sm text-muted-foreground">
+              No boards yet.{" "}
+              <Link href="/dashboard/board" className="text-primary underline">
+                Create one
               </Link>
-            ))}
-          </div>
-        )}
-      </section>
-    </div>
+              .
+            </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {boardsWithCount.map((board) => (
+                <Link
+                  key={board.id}
+                  href={`/dashboard/feedback?board=${board.id}`}
+                  className="rounded-lg border px-4 py-4 hover:bg-muted/50 transition-colors flex flex-col gap-1"
+                >
+                  <p className="font-medium text-sm">{board.name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {board.postCount} {board.postCount === 1 ? "post" : "posts"}
+                  </p>
+                </Link>
+              ))}
+            </div>
+          )}
+        </section>
+      </div>
     </div>
   );
 }

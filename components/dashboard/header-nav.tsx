@@ -75,16 +75,11 @@ export default function HeaderNav({ children }: IProps) {
   return (
     <div className="min-h-screen bg-background text-foreground">
       <div className="flex flex-1 flex-col">
-        <header className="flex h-16 items-center gap-4 border-b bg-background px-4 sm:px-6">
-          <div className="flex h-16 items-center gap-3 border-b pr-4">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background px-4 sm:px-6">
+          <div className="flex h-16 items-center gap-4 border-b pr-4">
             <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-sm font-semibold text-sidebar-primary-foreground">
               FK
             </div>
-          </div>
-          <button className="flex h-10 w-10 items-center justify-center rounded-md border md:hidden">
-            <Menu className="h-4 w-4" />
-          </button>
-          <div className="flex flex-1 items-center justify-between gap-4">
             <div className="flex flex-1 gap-4 justify-center">
               {headerNav.map((nav) => (
                 <Link key={nav.label} href={nav.href}>
@@ -99,32 +94,35 @@ export default function HeaderNav({ children }: IProps) {
                 </Link>
               ))}
             </div>
-            <div className="flex items-center gap-3">
-              <button className="relative flex h-10 w-10 items-center justify-center rounded-full border">
-                <Bell className="h-4 w-4" />
-                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
-              </button>
-              <DropdownMenu>
-                <DropdownMenuTrigger>
-                  <AvatarColor
-                    profile_color={profile.profile_color}
-                    first_name={profile.first_name?.[0]}
-                    last_name={profile.last_name?.[0]}
-                  />
-                </DropdownMenuTrigger>
-                <DropdownMenuContent className="w-40" align="start">
-                  <DropdownMenuLabel>
-                    <Link href={"/dashboard/settings"}>Settings</Link>
-                    <div
-                      onClick={logoutHandler}
-                      className="cursor-pointer text-destructive mt-2"
-                    >
-                      Logout
-                    </div>
-                  </DropdownMenuLabel>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
+          </div>
+          <button className="flex h-10 w-10 items-center justify-center rounded-md border md:hidden">
+            <Menu className="h-4 w-4" />
+          </button>
+          <div className="flex items-center gap-3">
+            <button className="relative flex h-10 w-10 items-center justify-center rounded-full border">
+              <Bell className="h-4 w-4" />
+              <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-destructive" />
+            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger>
+                <AvatarColor
+                  profile_color={profile.profile_color}
+                  first_name={profile.first_name?.[0]}
+                  last_name={profile.last_name?.[0]}
+                />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-40" align="start">
+                <DropdownMenuLabel>
+                  <Link href={"/dashboard/settings"}>Settings</Link>
+                  <div
+                    onClick={logoutHandler}
+                    className="cursor-pointer text-destructive mt-2"
+                  >
+                    Logout
+                  </div>
+                </DropdownMenuLabel>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
       </div>
