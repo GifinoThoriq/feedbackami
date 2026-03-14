@@ -23,6 +23,22 @@ export async function getInboundSources(boardId: string): Promise<IInboundSource
   return data ?? [];
 }
 
+export async function getAllInboundSources(): Promise<IInboundSource[]> {
+  const supabase = createClient(cookies());
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return [];
+
+  const { data } = await supabase
+    .from("inbound_sources")
+    .select("*")
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  return data ?? [];
+}
+
 export async function saveInboundSource(
   boardId: string | null,
   sourceType: "slack" | "discord" | "custom",

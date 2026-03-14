@@ -11,6 +11,7 @@ import {
 } from "@/app/actions/integrationActions";
 import {
   getInboundSources,
+  getAllInboundSources,
   saveInboundSource,
   deleteInboundSource,
 } from "@/app/actions/inboundActions";
@@ -105,19 +106,64 @@ function CopyButton({ text }: { text: string }) {
   );
 }
 
+function BoardPills({
+  boards,
+  value,
+  onChange,
+  includeAll,
+}: {
+  boards: IBoard[];
+  value: string;
+  onChange: (id: string) => void;
+  includeAll?: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap gap-2">
+      {includeAll && (
+        <button
+          onClick={() => onChange("all")}
+          className={`px-3 py-1.5 rounded-md text-sm border transition ${
+            value === "all"
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border hover:border-primary/50"
+          }`}
+        >
+          All boards
+        </button>
+      )}
+      {boards.map((b) => (
+        <button
+          key={b.id}
+          onClick={() => onChange(b.id)}
+          className={`px-3 py-1.5 rounded-md text-sm border transition ${
+            b.id === value
+              ? "bg-primary text-primary-foreground border-primary"
+              : "border-border hover:border-primary/50"
+          }`}
+        >
+          {b.name}
+        </button>
+      ))}
+    </div>
+  );
+}
+
 export default function IntegrationsClient({ boards }: IProps) {
-  const [selectedBoardId, setSelectedBoardId] = useState<string>(
+  // Section A: Embed
+  const [embedBoardId, setEmbedBoardId] = useState<string>("all");
+  const [embedCopied, setEmbedCopied] = useState<string | null>(null);
+
+  // Section B: Outbound webhook
+  const [webhookBoardId, setWebhookBoardId] = useState<string>(
     boards[0]?.id ?? ""
   );
-  // Outbound webhook state
   const [platform, setPlatform] = useState<Platform>("discord");
   const [webhookUrl, setWebhookUrl] = useState("");
   const [existing, setExisting] = useState<Integration | null>(null);
-  const [copied, setCopied] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [message, setMessage] = useState<string | null>(null);
 
-  // Inbound sources state
+  // Section C: Inbound sources
   const [inboundSources, setInboundSources] = useState<IInboundSource[]>([]);
   const [inboundType, setInboundType] = useState<InboundType>("custom");
   const [inboundLabel, setInboundLabel] = useState("");
@@ -127,42 +173,48 @@ export default function IntegrationsClient({ boards }: IProps) {
   const [inboundPending, startInboundTransition] = useTransition();
   const [showInboundHelp, setShowInboundHelp] = useState<InboundType>("custom");
 
-  const selectedBoard = boards.find((b) => b.id === selectedBoardId);
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "https://yourdomain.com";
 
-  const iframeSnippet = selectedBoardId
-    ? `<iframe src="${process.env.NEXT_PUBLIC_SITE_URL ?? "https://yourdomain.com"}/embed/${selectedBoardId}" width="100%" height="600" frameborder="0"></iframe>`
-    : "";
-
+  // Load webhook integration when webhookBoardId changes
   useEffect(() => {
-    if (!selectedBoardId) return;
     setExisting(null);
     setWebhookUrl("");
     setMessage(null);
-    setInboundResult(null);
-    setInboundMessage(null);
-    getIntegration(selectedBoardId).then((data) => {
-      if (data) {
-        setExisting(data);
-        setPlatform(data.type);
-        setWebhookUrl(data.webhook_url);
-      }
-    });
-    getInboundSources(selectedBoardId).then(setInboundSources);
-  }, [selectedBoardId]);
+    const boardId = webhookBoardId === "all" ? null : webhookBoardId;
+    if (boardId !== null || webhookBoardId === "all") {
+      getIntegration(boardId).then((data) => {
+        if (data) {
+          setExisting(data);
+          setPlatform(data.type);
+          setWebhookUrl(data.webhook_url);
+        }
+      });
+    }
+  }, [webhookBoardId]);
 
-  function handleCopy() {
-    navigator.clipboard.writeText(iframeSnippet);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Load inbound sources when inboundBoardId changes
+  useEffect(() => {
+    if (inboundBoardId === "") {
+      getAllInboundSources().then(setInboundSources);
+    } else {
+      getInboundSources(inboundBoardId).then(setInboundSources);
+    }
+  }, [inboundBoardId]);
+
+  function handleEmbedCopy(snippet: string, key: string) {
+    navigator.clipboard.writeText(snippet);
+    setEmbedCopied(key);
+    setTimeout(() => setEmbedCopied(null), 2000);
   }
 
   function handleSave() {
-    if (!webhookUrl.trim() || !selectedBoardId) return;
+    if (!webhookUrl.trim()) return;
+    const boardId = webhookBoardId === "all" ? null : webhookBoardId;
     startTransition(async () => {
-      const result = await saveIntegration(selectedBoardId, platform, webhookUrl);
+      const result = await saveIntegration(boardId, platform, webhookUrl);
       if (result.ok) {
         setMessage("Integration saved.");
-        const updated = await getIntegration(selectedBoardId);
+        const updated = await getIntegration(boardId);
         setExisting(updated);
       } else {
         setMessage(`Error: ${result.error}`);
@@ -171,9 +223,9 @@ export default function IntegrationsClient({ boards }: IProps) {
   }
 
   function handleRemove() {
-    if (!selectedBoardId) return;
+    const boardId = webhookBoardId === "all" ? null : webhookBoardId;
     startTransition(async () => {
-      const result = await deleteIntegration(selectedBoardId);
+      const result = await deleteIntegration(boardId);
       if (result.ok) {
         setExisting(null);
         setWebhookUrl("");
@@ -194,6 +246,9 @@ export default function IntegrationsClient({ boards }: IProps) {
         setInboundMessage(null);
         if (inboundBoardId) {
           const updated = await getInboundSources(inboundBoardId);
+          setInboundSources(updated);
+        } else {
+          const updated = await getAllInboundSources();
           setInboundSources(updated);
         }
       } else {
@@ -231,57 +286,93 @@ export default function IntegrationsClient({ boards }: IProps) {
         </p>
       </div>
 
-      {/* Board selector */}
-      <div className="space-y-2">
-        <label className="text-sm font-medium">Select Board</label>
-        <div className="flex flex-wrap gap-2">
-          {boards.map((b) => (
-            <button
-              key={b.id}
-              onClick={() => setSelectedBoardId(b.id)}
-              className={`px-3 py-1.5 rounded-md text-sm border transition ${
-                b.id === selectedBoardId
-                  ? "bg-primary text-primary-foreground border-primary"
-                  : "border-border hover:border-primary/50"
-              }`}
-            >
-              {b.name}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* Section A: Embed Widget */}
       <section className="space-y-3 rounded-xl border p-5">
         <h2 className="font-semibold text-base">Embed Widget</h2>
         <p className="text-sm text-muted-foreground">
           Copy this snippet and paste it into any HTML page to embed your feedback board.
         </p>
-        <div className="relative">
-          <code className="block w-full rounded-md bg-muted p-3 text-xs font-mono break-all pr-10">
-            {iframeSnippet}
-          </code>
-          <button
-            onClick={handleCopy}
-            className="absolute right-2 top-2 p-1.5 rounded hover:bg-background transition"
-            title="Copy"
-          >
-            {copied ? (
-              <Check className="size-4 text-green-500" />
-            ) : (
-              <Copy className="size-4 text-muted-foreground" />
-            )}
-          </button>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Board</label>
+          <BoardPills
+            boards={boards}
+            value={embedBoardId}
+            onChange={setEmbedBoardId}
+            includeAll
+          />
         </div>
-        <a
-          href={`/embed/${selectedBoardId}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
-        >
-          <ExternalLink className="size-3.5" />
-          Preview widget
-        </a>
+
+        {embedBoardId === "all" ? (
+          <div className="space-y-3">
+            {boards.map((b) => {
+              const snippet = `<iframe src="${siteUrl}/embed/${b.id}" width="100%" height="600" frameborder="0"></iframe>`;
+              return (
+                <div key={b.id} className="space-y-1">
+                  <p className="text-xs font-medium text-muted-foreground">{b.name}</p>
+                  <div className="relative">
+                    <code className="block w-full rounded-md bg-muted p-3 text-xs font-mono break-all pr-10">
+                      {snippet}
+                    </code>
+                    <button
+                      onClick={() => handleEmbedCopy(snippet, b.id)}
+                      className="absolute right-2 top-2 p-1.5 rounded hover:bg-background transition"
+                      title="Copy"
+                    >
+                      {embedCopied === b.id ? (
+                        <Check className="size-4 text-green-500" />
+                      ) : (
+                        <Copy className="size-4 text-muted-foreground" />
+                      )}
+                    </button>
+                  </div>
+                  <a
+                    href={`/embed/${b.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 text-xs text-primary hover:underline"
+                  >
+                    <ExternalLink className="size-3" />
+                    Preview
+                  </a>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <>
+            <div className="relative">
+              <code className="block w-full rounded-md bg-muted p-3 text-xs font-mono break-all pr-10">
+                {`<iframe src="${siteUrl}/embed/${embedBoardId}" width="100%" height="600" frameborder="0"></iframe>`}
+              </code>
+              <button
+                onClick={() =>
+                  handleEmbedCopy(
+                    `<iframe src="${siteUrl}/embed/${embedBoardId}" width="100%" height="600" frameborder="0"></iframe>`,
+                    embedBoardId
+                  )
+                }
+                className="absolute right-2 top-2 p-1.5 rounded hover:bg-background transition"
+                title="Copy"
+              >
+                {embedCopied === embedBoardId ? (
+                  <Check className="size-4 text-green-500" />
+                ) : (
+                  <Copy className="size-4 text-muted-foreground" />
+                )}
+              </button>
+            </div>
+            <a
+              href={`/embed/${embedBoardId}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+            >
+              <ExternalLink className="size-3.5" />
+              Preview widget
+            </a>
+          </>
+        )}
       </section>
 
       {/* Section B: Webhook Notifications */}
@@ -291,6 +382,21 @@ export default function IntegrationsClient({ boards }: IProps) {
           <p className="text-sm text-muted-foreground mt-0.5">
             Get notified when new feedback is submitted.
           </p>
+        </div>
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium">Board</label>
+          <BoardPills
+            boards={boards}
+            value={webhookBoardId}
+            onChange={setWebhookBoardId}
+            includeAll
+          />
+          {webhookBoardId === "all" && (
+            <p className="text-xs text-muted-foreground">
+              Global webhook fires for all boards.
+            </p>
+          )}
         </div>
 
         {existing && (
@@ -385,8 +491,6 @@ export default function IntegrationsClient({ boards }: IProps) {
           <div className="space-y-2">
             <p className="text-sm font-medium">Active Sources</p>
             {inboundSources.map((src) => {
-              const siteUrl =
-                process.env.NEXT_PUBLIC_SITE_URL ?? "https://yourdomain.com";
               const endpointUrl = `${siteUrl}/api/inbound/${src.id}`;
               return (
                 <div
@@ -401,6 +505,11 @@ export default function IntegrationsClient({ boards }: IProps) {
                       {src.label && (
                         <span className="text-muted-foreground text-xs truncate">
                           {src.label}
+                        </span>
+                      )}
+                      {!src.board_id && (
+                        <span className="px-2 py-0.5 rounded-full bg-muted text-muted-foreground text-xs">
+                          global
                         </span>
                       )}
                     </div>
@@ -452,15 +561,15 @@ export default function IntegrationsClient({ boards }: IProps) {
             ))}
           </div>
 
-          {/* Board assignment (optional) */}
+          {/* Board assignment */}
           <div className="space-y-1.5">
-            <label className="text-sm font-medium">Board <span className="text-muted-foreground font-normal">(optional)</span></label>
+            <label className="text-sm font-medium">Board</label>
             <select
               className="w-full border rounded-md px-3 py-2 text-sm bg-background"
               value={inboundBoardId}
               onChange={(e) => setInboundBoardId(e.target.value)}
             >
-              <option value="">No board (global — assign when processing)</option>
+              <option value="">Global (all boards)</option>
               {boards.map((b) => (
                 <option key={b.id} value={b.id}>{b.name}</option>
               ))}

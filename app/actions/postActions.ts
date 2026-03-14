@@ -5,6 +5,59 @@ import { createClient } from "@/lib/supabase/server";
 import { createPostSchema } from "@/lib/validation/post";
 import { cookies } from "next/headers";
 
+function buildWebhookBody(
+  integration: { type: string; webhook_url: string },
+  boardId: string,
+  boardName: string,
+  post: { id: string; title: string; details: string | null; created_at: string }
+): object {
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
+  const postLink = `${siteUrl}/p/${post.id}`;
+
+  if (integration.type === "discord") {
+    return {
+      username: "Feedbackami",
+      embeds: [
+        {
+          title: `📬 New Feedback — ${boardName}`,
+          description: post.title,
+          color: 0x55adfe,
+          fields: post.details ? [{ name: "Details", value: post.details }] : [],
+          timestamp: post.created_at,
+          url: postLink,
+        },
+      ],
+    };
+  } else if (integration.type === "slack") {
+    return {
+      text: `New feedback on *${boardName}*`,
+      blocks: [
+        {
+          type: "section",
+          text: {
+            type: "mrkdwn",
+            text: `*New Feedback — ${boardName}*\n*${post.title}*${
+              post.details ? `\n${post.details}` : ""
+            }\n<${postLink}|View post>`,
+          },
+        },
+      ],
+    };
+  } else {
+    return {
+      event: "new_post",
+      board_id: boardId,
+      post: {
+        id: post.id,
+        title: post.title,
+        details: post.details,
+        created_at: post.created_at,
+        link: postLink,
+      },
+    };
+  }
+}
+
 async function fireWebhook(
   boardId: string,
   post: {
@@ -16,63 +69,24 @@ async function fireWebhook(
   boardName: string
 ) {
   const supabase = createClient(cookies());
-  const { data: integration } = await supabase
-    .from("board_integrations")
-    .select("*")
-    .eq("board_id", boardId)
-    .maybeSingle();
 
-  if (!integration) return;
+  // Fetch board-specific and global integrations in parallel
+  const [{ data: boardIntegration }, { data: globalIntegration }] = await Promise.all([
+    supabase.from("board_integrations").select("*").eq("board_id", boardId).maybeSingle(),
+    supabase.from("board_integrations").select("*").is("board_id", null).maybeSingle(),
+  ]);
 
-  let body: object;
-  if (integration.type === "discord") {
-    body = {
-      username: "Feedbackami",
-      embeds: [
-        {
-          title: `📬 New Feedback — ${boardName}`,
-          description: post.title,
-          color: 0x55adfe,
-          fields: post.details
-            ? [{ name: "Details", value: post.details }]
-            : [],
-          timestamp: post.created_at,
-        },
-      ],
-    };
-  } else if (integration.type === "slack") {
-    body = {
-      text: `New feedback on *${boardName}*`,
-      blocks: [
-        {
-          type: "section",
-          text: {
-            type: "mrkdwn",
-            text: `*New Feedback — ${boardName}*\n*${post.title}*${
-              post.details ? `\n${post.details}` : ""
-            }`,
-          },
-        },
-      ],
-    };
-  } else {
-    body = {
-      event: "new_post",
-      board_id: boardId,
-      post: {
-        id: post.id,
-        title: post.title,
-        details: post.details,
-        created_at: post.created_at,
-      },
-    };
+  const integrations = [boardIntegration, globalIntegration].filter(Boolean);
+  if (integrations.length === 0) return;
+
+  for (const integration of integrations) {
+    const body = buildWebhookBody(integration!, boardId, boardName, post);
+    fetch(integration!.webhook_url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    }).catch(() => {});
   }
-
-  fetch(integration.webhook_url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  }).catch(() => {});
 }
 
 type ActionResult = { ok: true; id: string } | { ok: false; error: string };

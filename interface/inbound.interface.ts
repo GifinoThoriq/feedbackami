@@ -1,6 +1,6 @@
 export interface IInboundSource {
   id: string;
-  board_id: string;
+  board_id: string | null;
   user_id: string;
   source_type: "slack" | "discord" | "custom";
   label: string | null;
@@ -10,7 +10,8 @@ export interface IInboundSource {
 
 export interface IStagedPost {
   id: string;
-  board_id: string;
+  board_id: string | null;
+  user_id: string | null;
   title: string;
   details: string | null;
   raw_feedback_ids: string[];
