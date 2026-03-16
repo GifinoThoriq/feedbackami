@@ -1,16 +1,25 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowRight, CheckCircle, MessageSquare, Star, ThumbsUp, Zap } from "lucide-react";
 
+function VerifiedBanner() {
+  const searchParams = useSearchParams();
+  if (searchParams.get("verified") !== "1") return null;
+  return (
+    <div className="mb-6 flex items-start gap-3 rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700">
+      <CheckCircle className="size-4 mt-0.5 shrink-0 text-green-500" />
+      <span>Your account is ready — please sign in to continue.</span>
+    </div>
+  );
+}
+
 export default function LoginPage() {
   const supabase = createClient();
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const verified = searchParams.get("verified") === "1";
   const [err, setErr] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
 
@@ -106,12 +115,9 @@ export default function LoginPage() {
             <span className="font-bold text-xl text-gray-900">Feedbackami</span>
           </Link>
 
-          {verified && (
-            <div className="mb-6 flex items-start gap-3 rounded-xl bg-green-50 border border-green-100 px-4 py-3 text-sm text-green-700">
-              <CheckCircle className="size-4 mt-0.5 shrink-0 text-green-500" />
-              <span>Your account is ready — please sign in to continue.</span>
-            </div>
-          )}
+          <Suspense>
+            <VerifiedBanner />
+          </Suspense>
 
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-gray-900">Welcome back</h1>
